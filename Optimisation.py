@@ -10,7 +10,7 @@ import csv
 
 parser = ArgumentParser()
 parser.add_argument('-i', default=1000, type=int, required=False, help='maxiter=4000, 400')
-parser.add_argument('-p', default=5, type=int, required=False, help='popsize=2, 10')
+parser.add_argument('-p', default=10, type=int, required=False, help='popsize=2, 10')
 parser.add_argument('-m', default=0.5, type=float, required=False, help='mutation=0.5')
 parser.add_argument('-r', default=0.3, type=float, required=False, help='recombination=0.3')
 parser.add_argument('-e', default=6, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year')
@@ -35,13 +35,13 @@ def F(x):
     # Simulation with only baseload
     Deficit_energy1, Deficit_power1, Deficit1, DischargePH1 = Reliability(S, hydro=baseload) # Sj-EDE(t, j), MW
     Max_deficit1 = np.reshape(Deficit1, (-1, 8760)).sum(axis=-1) # MWh per year
-    PFlexible = Deficit_power1.max() * pow(10, -3) # GW
+    PHydro1 = (baseload+Deficit_power1).max() * pow(10, -3) # GW
     
     GHydro = resolution * Max_deficit1.max() / efficiencyPH  + CBaseload.sum() * pow(10,3)
     
     # Power and energy penalty functions
     PenEnergy = max(0, GHydro - Hydromax)
-    PenPower = max(0,PFlexible - CPeak.sum())
+    PenPower = max(0,PHydro1 - CHydro.sum())
     
     # Simulation with baseload and all existing capacity
     Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, hydro=np.ones(intervals) * CHydro.sum() * pow(10,3))
@@ -85,7 +85,7 @@ def F(x):
     
     with open('Results/record_{}_{}_{}.csv'.format(node,scenario,percapita), 'a', newline="") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,LCOE]))
+        writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,PenDeficit,PenEnergy,PenPower,LCOE]))
 
     Func = LCOE + PenDeficit + PenEnergy + PenPower + PenDC
     
@@ -98,8 +98,8 @@ if __name__=='__main__':
 #    lb = [0.]       * pzones + [0.]     * wzones + contingency_ph   + contingency_b     + [0.]      + [0.]     + [0.]    * inters + [0.] * nodes
 #    ub = [10000.]   * pzones + [300]    * wzones + [10000.] * nodes + [10000.] * nodes  + [100000.] + [100000] + [1000.] * inters + [50.] * nodes
 
-    lb = [0.]       * pzones + contingency_ph                               + [0.]      + [0.] * inters
-    ub = [500.]   * pzones + [500.] * (nodes - inters) + inters * [0]   + [7000.] + [0.] * inters
+    lb = [0.] * pzones      + contingency_ph                               + [0.]       + [0.] * inters
+    ub = [500.] * pzones    + ([500.] * (nodes - inters) + inters * [0])   + [7000.]    + [0.] * inters
 
     # start = np.genfromtxt('Results/init.csv', delimiter=',')
 
