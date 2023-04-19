@@ -41,7 +41,10 @@ def Transmission(solution, output=False):
     MDischargePH = np.tile(solution.DischargePH, (nodes, 1)).transpose() * pcfactor # MDischarge: DPH(j, t)
     MChargePH = np.tile(solution.ChargePH, (nodes, 1)).transpose() * pcfactor # MCharge: CHPH(j, t)
 
-    MImport = MLoad + MChargePH + MSpillage \
+    efactor = np.array([0,0,0,0,0,0,0,0.25,0.25,0.25,0.25])
+    MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor
+
+    MImport = MLoad + MChargePH + MSpillage - MExport \
               - MPV - MInter - MHydro - MDischargePH - MDeficit # - MWind; EIM(t, j), MW
     
     coverage = solution.coverage
@@ -66,7 +69,7 @@ def Transmission(solution, output=False):
         # Check the final node
         THTS1 = -1 * MImport[:, np.where(Nodel=='TH')[0][0]] - CHTH if 'TH' in coverage else np.zeros(intervals)
 
-        assert abs(THTS - THTS1).max() <= 0.1, print('SEME Error', abs(THTS - THTS1).max())
+        assert abs(THTS - THTS1).max() <= 0.1, print('THTS Error', abs(THTS - THTS1).max())
 
         TDC = np.array([CHTH, THTS, TSSA, SAZH, ZHPE, PEMO, IN1CH, IN2TS, IN3SA, IN4PE]).transpose() # TDC(t, k), MW   
     

@@ -9,8 +9,8 @@ def Reliability(solution, hydro, start=None, end=None):
     """Deficit = Simulation.Reliability(S, hydro=...)"""
 
     ###### CALCULATE NETLOAD FOR EACH INTERVAL ######
-    Netload = (solution.MLoad.sum(axis=1) - solution.GPV.sum(axis=1) - solution.GInter.sum(axis=1))[start:end] \
-        - hydro # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
+    Netload = (solution.MLoad.sum(axis=1) - solution.GPV.sum(axis=1) - solution.GInter.sum(axis=1) - solution.exports)[start:end] \
+        - hydro[start:end] # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
     length = len(Netload)
     
     solution.hydro = hydro # MW

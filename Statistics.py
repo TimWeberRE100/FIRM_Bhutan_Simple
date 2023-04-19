@@ -102,10 +102,7 @@ def LPGM(solution):
 def GGTA(solution):
     """GW, GWh, TWh p.a. and A$/MWh information"""
     # Import cost factors
-    if scenario == 'HVDC':
-        factor = np.genfromtxt('Data/factor.csv', dtype=None, delimiter=',', encoding=None)
-    elif scenario == 'HVAC':
-        factor = np.genfromtxt('Data/factor_hvac.csv', dtype=None, delimiter=',', encoding=None)
+    factor = np.genfromtxt('Data/factor.csv', dtype=None, delimiter=',', encoding=None)
         
     factor = dict(factor)
 
@@ -206,7 +203,7 @@ def Information(x, hydro , bio, gas):
     print("Statistics start at", start)
 
     S = Solution(x)
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargeB = Reliability(S, hydro=hydro)
+    Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, hydro=hydro)
 
     try:
         assert Deficit.sum() * resolution < 0.1, 'Energy generation and demand are not balanced.'
