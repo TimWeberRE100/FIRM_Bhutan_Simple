@@ -5,15 +5,15 @@
 
 import numpy as np
 
-def Reliability(solution, hydro, start=None, end=None):
+def Reliability(solution,baseload, flexible, start=None, end=None):
     """Deficit = Simulation.Reliability(S, hydro=...)"""
 
     ###### CALCULATE NETLOAD FOR EACH INTERVAL ######
     Netload = (solution.MLoad.sum(axis=1) - solution.GPV.sum(axis=1) - solution.GInter.sum(axis=1) - solution.exports)[start:end] \
-        - hydro[start:end] # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
+        - baseload[start:end] - flexible # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
     length = len(Netload)
     
-    solution.hydro = hydro # MW
+    solution.hydro = baseload[start:end] + flexible # MW
 
     ###### CREATE STORAGE SYSTEM VARIABLES ######
     Pcapacity_PH = sum(solution.CPHP) * pow(10, 3) # S-CPHP(j), GW to MW

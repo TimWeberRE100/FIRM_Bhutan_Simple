@@ -6,6 +6,8 @@
 import numpy as np
 from Optimisation import scenario, node, percapita
 
+node = 'Super' # DEBUG
+
 ###### NODAL LISTS ######
 Nodel = np.array(['CH', 'TH', 'TS', 'SA', 'ZH', 'PE', 'MO', 'IN1', 'IN2', 'IN3', 'IN4'])
 PVl =   np.array(['CH']*1 + ['TH']*1 + ['TS']*1 + ['SA']*1 + ['ZH']*1 + ['PE']*1 + ['MO']*1)
@@ -23,7 +25,8 @@ CHydro = assets[:, 0] * pow(10, -3) # CHydro(j), MW to GW
 constraints = np.genfromtxt('Data/constraints_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
 EHydro = constraints[:, 0] # GWh per year
 baseload = np.genfromtxt('Data/RoR_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None).astype(float)
-CBaseload = min(baseload)
+hfactor1 = CHydro / CHydro.sum()
+CBaseload = min(baseload)*resolution*pow(10,-3) * hfactor1 # MW to GW
 CPeak = CHydro - CBaseload # MW
 
 exports = MLoad.sum(axis=1) - baseload # Export excess hydro to India, assume no export of solar PV
@@ -97,6 +100,7 @@ iidx = phidx + 1 + inters # Index of external interconnections, noting pumped hy
 
 ###### NETWORK CONSTRAINTS ######
 energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
+export_annual = exports.sum() * pow(10,-9) * resolution / years #PWh p.a.
 contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:nodes] + inters*[0] # MW to GW
 #manage = 0 # weeks
 #allowance = MLoad.sum(axis=1).max() * 0.05 * manage * 168 * efficiencyPH # MWh
@@ -106,8 +110,6 @@ class Solution:
     """A candidate solution of decision variables CPV(i), CWind(i), CPHP(j), S-CPHS(j)"""
 
     def __init__(self, x):
-        """ print(x)
-        print(pidx, phidx, iidx) """
         self.x = x
         self.MLoad = MLoad
         self.intervals, self.nodes = (intervals, nodes)

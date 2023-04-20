@@ -13,27 +13,32 @@ def Flexible(instance):
     """Energy source of high flexibility"""
 
     year, x = instance
-    print('Dispatch works on', year)
 
     S = Solution(x)
 
-    startidx = int((24 / resolution) * (dt.datetime(year, 1, 1) - dt.datetime(firstyear, 1, 1)).days)
-    endidx = int((24 / resolution) * (dt.datetime(year+1, 1, 1) - dt.datetime(firstyear, 1, 1)).days)
+    #startidx = int((24 / resolution) * (dt.datetime(year, 1, 1) - dt.datetime(firstyear, 1, 1)).days)
+    #endidx = int((24 / resolution) * (dt.datetime(year+1, 1, 1) - dt.datetime(firstyear, 1, 1)).days)
+    startidx = int((24 / resolution) * (year-firstyear) * 365)
+    endidx = int((24 / resolution) * (year+1-firstyear) * 365)
 
     Fcapacity = CPeak.sum() * pow(10, 3) # GW to MW
     flexible = Fcapacity * np.ones(endidx - startidx)
 
-    for i in range(0, endidx - startidx, timestep):
-        flexible[i: i+timestep] = 0
-        Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, hydro=baseload + flexible, start=startidx, end=endidx) # Sj-EDE(t, j), MW
+    for i in range(0, endidx - startidx):
+        flexible[i] = 0
+        Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, baseload=baseload, flexible=flexible, start=startidx, end=endidx) # Sj-EDE(t, j), MW
         if Deficit.sum() * resolution > 0.1:
-            flexible[i: i+timestep] = Fcapacity
+            flexible[i] = Fcapacity
+
+    Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, baseload=baseload, flexible=flexible, start=startidx, end=endidx) # Required after updating final interval of flexible
 
     flexible = np.clip(flexible - S.Spillage, 0, None)
 
+    print('Dispatch works on', year)
+
     return flexible
 
-def Analysis(x):
+def Analysis(x,suffix):
     """Dispatch.Analysis(result.x)"""
 
     starttime = dt.datetime.now()
@@ -46,7 +51,7 @@ def Analysis(x):
     pool.terminate()
 
     Flex = np.concatenate(Dispresult)
-    np.savetxt('Results/Dispatch_Flexible_{}_{}_{}.csv'.format(node,scenario,percapita), Flex, fmt='%f', delimiter=',', newline='\n', header='Flexible energy resources')
+    np.savetxt('Results/Dispatch_Flexible' + suffix, Flex, fmt='%f', delimiter=',', newline='\n', header='Flexible energy resources')
 
     endtime = dt.datetime.now()
     print('Dispatch took', endtime - starttime)
@@ -57,5 +62,6 @@ def Analysis(x):
     return True
 
 if __name__ == '__main__':
-    capacities = np.genfromtxt('Results/Optimisation_resultx.csv', delimiter=',', skip_header=1)
-    Analysis(capacities)
+    suffix="_Super_existing_6.csv"
+    capacities = np.genfromtxt('Results/Optimisation_resultx'+suffix, delimiter=',')
+    Analysis(capacities,suffix)
