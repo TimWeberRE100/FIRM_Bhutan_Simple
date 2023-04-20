@@ -41,7 +41,8 @@ def Transmission(solution, output=False):
     MDischargePH = np.tile(solution.DischargePH, (nodes, 1)).transpose() * pcfactor # MDischarge: DPH(j, t)
     MChargePH = np.tile(solution.ChargePH, (nodes, 1)).transpose() * pcfactor # MCharge: CHPH(j, t)
 
-    efactor = np.array([0,0,0,0,0,0,0,0.25,0.25,0.25,0.25])
+    exportNodes = np.array([0,0,0,0,0,0,0,1,1,1,1])
+    efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
     MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor
 
     MImport = MLoad + MChargePH + MSpillage - MExport \
