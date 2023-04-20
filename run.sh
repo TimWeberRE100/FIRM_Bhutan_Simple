@@ -1,0 +1,9 @@
+python3 Optimisation.py -e 3 -s existing
+python3 Optimisation.py -e 6 -s existing
+python3 Optimisation.py -e 20 -s existing
+python3 Optimisation.py -e 3 -s construction
+python3 Optimisation.py -e 6 -s construction
+python3 Optimisation.py -e 20 -s construction
+python3 Optimisation.py -e 3 -s all
+python3 Optimisation.py -e 6 -s all
+python3 Optimisation.py -e 20 -s all
