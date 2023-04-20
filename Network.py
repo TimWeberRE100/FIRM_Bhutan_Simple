@@ -41,7 +41,7 @@ def Transmission(solution, output=False):
     MDischargePH = np.tile(solution.DischargePH, (nodes, 1)).transpose() * pcfactor # MDischarge: DPH(j, t)
     MChargePH = np.tile(solution.ChargePH, (nodes, 1)).transpose() * pcfactor # MCharge: CHPH(j, t)
 
-    exportNodes = np.array([0,0,0,0,0,0,0,1,1,1,1])
+    exportNodes = np.array([0,0,0,0,0,0,0,CHydro[0]+CHydro[1], CHydro[2], CHydro[3]+CHydro[4], CHydro[5]+CHydro[6]]) # Electricity exported to each node proportional to the capacity of hydro nearest that interconnection
     efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
     MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor
 
