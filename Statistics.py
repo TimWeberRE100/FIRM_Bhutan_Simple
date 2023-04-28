@@ -116,7 +116,7 @@ def GGTA(solution):
     GPV, GHydro, GInter = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.MHydro.sum(), solution.MInter.sum())) # TWh p.a.
     DischargePH = solution.DischargePH.sum()
 #    GWind = solution.GWind.sum()
-    CFPV = GPV / CPV / 8.76
+    CFPV = GPV / CPV / 8.76 if CPV != 0 else 0
 #    CFWind = GWind / CWind / 8.76
     
     # Calculate the annual costs for each technology
@@ -256,7 +256,7 @@ def Information(x, hydro):
     return True
 
 if __name__ == '__main__':
-    suffix = "_Super_existing_6.csv"
+    suffix = "_Super_construction_20.csv"
     Optimisation_x = np.genfromtxt('Results/Optimisation_resultx{}'.format(suffix), delimiter=',')
     hydro = np.genfromtxt('Results/Dispatch_Flexible{}'.format(suffix), delimiter=',', skip_header=1)
     Information(Optimisation_x, hydro)

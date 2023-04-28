@@ -101,7 +101,8 @@ iidx = phidx + 1 + inters # Index of external interconnections, noting pumped hy
 ###### NETWORK CONSTRAINTS ######
 energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
 export_annual = exports.sum() * pow(10,-9) * resolution / years #PWh p.a.
-contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:nodes] + inters*[0] # MW to GW
+contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:(nodes-inters)] + inters*[0] # MW to GW
+
 #manage = 0 # weeks
 #allowance = MLoad.sum(axis=1).max() * 0.05 * manage * 168 * efficiencyPH # MWh
 allowance = 0 # Allowable annual deficit, MWh
