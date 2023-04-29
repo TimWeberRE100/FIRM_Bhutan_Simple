@@ -75,7 +75,7 @@ def LPGM(solution):
              'PHES-Storage (MWh),' \
              'CHTH,THTS,TSSA,SAZH,ZHPE,PEMO,IN1CH,IN2TS,IN3SA,IN4PE'
 
-    np.savetxt('Results/LPGM_{}_{}_{}_Network.csv'.format(node,scenario,percapita), C, fmt='%s', delimiter=',', header=header, comments='')
+    np.savetxt('Results/LPGM_{}_{}_{}_{}_Network.csv'.format(node,scenario,percapita,export_flag), C, fmt='%s', delimiter=',', header=header, comments='')
 
     if 'Super' in node:
         header = 'Date & time,Operational demand,' \
@@ -94,7 +94,7 @@ def LPGM(solution):
             C = np.around(C.transpose())
 
             C = np.insert(C.astype('str'), 0, datentime, axis=1)
-            np.savetxt('Results/LPGM_{}_{}_{}_{}.csv'.format(node,scenario,percapita, solution.Nodel[j]), C, fmt='%s', delimiter=',', header=header, comments='')
+            np.savetxt('Results/LPGM_{}_{}_{}_{}_{}.csv'.format(node,scenario,percapita, export_flag,solution.Nodel[j]), C, fmt='%s', delimiter=',', header=header, comments='')
 
     print('Load profiles and generation mix is produced.')
 
@@ -193,7 +193,7 @@ def GGTA(solution):
               + list(solution.CDC) \
               + [LCOE, LCOG, LCOB, LCOGP, LCOGH, LCOGI, LCOBS_P, LCOBT, LCOBL] # + [CWind, GWind, LCOGW]
 
-    np.savetxt('Results/GGTA_{}_{}_{}.csv'.format(node,scenario,percapita), D, fmt='%f', delimiter=',')
+    np.savetxt('Results/GGTA_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), D, fmt='%f', delimiter=',')
     print('Energy generation, storage and transmission information is produced.')
 
     return True

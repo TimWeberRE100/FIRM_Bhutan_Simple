@@ -4,7 +4,7 @@
 # Correspondence: bin.lu@anu.edu.au
 
 import numpy as np
-from Optimisation import scenario, node, percapita
+from Optimisation import scenario, node, percapita, export_flag
 
 node = 'Super' # DEBUG
 
@@ -29,8 +29,13 @@ hfactor1 = CHydro / CHydro.sum()
 CBaseload = min(baseload)*resolution*pow(10,-3) * hfactor1 # MW to GW
 CPeak = CHydro - CBaseload # MW
 
-exports = MLoad.sum(axis=1) - baseload # Export excess hydro to India, assume no export of solar PV
-exports[exports > 0] = 0
+if export_flag == 'export':
+    exports = MLoad.sum(axis=1) - baseload # Export excess hydro to India, assume no export of solar PV
+    exports[exports > 0] = 0
+elif export_flag == 'no_export':
+    exports = np.zeros(MLoad.shape[0])
+else:
+    print("Export flag error")
 
 ###### CONSTRAINTS ######
 # Energy constraints

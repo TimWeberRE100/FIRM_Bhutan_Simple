@@ -16,11 +16,13 @@ parser.add_argument('-r', default=0.3, type=float, required=False, help='recombi
 parser.add_argument('-e', default=23, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year; prefix 2 for flat curves')
 parser.add_argument('-n', default='Super', type=str, required=False, help='Super, CH, TH...')
 parser.add_argument('-s', default='existing', type=str, required=False, help='all, construction, existing')
+parser.add_argument('-z', default='export', type=str, required=False, help='export, no_export')
 args = parser.parse_args()
 
 scenario = args.s
 node = args.n
 percapita = args.e
+export_flag = args.z
 
 from Input import *
 from Simulation import Reliability
@@ -87,7 +89,7 @@ def F(x):
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
     LCOE = cost / abs(energy - export_annual - loss)
     
-    with open('Results/record_{}_{}_{}.csv'.format(node,scenario,percapita), 'a', newline="") as csvfile:
+    with open('Results/record_{}_{}_{}_{}.csv'.format(node,scenario,percapita, export_flag), 'a', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,PenDeficit,PenEnergy,PenPower,LCOE]))
 
@@ -111,7 +113,7 @@ if __name__=='__main__':
                                     maxiter=args.i, popsize=args.p, mutation=args.m, recombination=args.r,
                                     disp=True, polish=False, updating='deferred', workers=-1) ###### CHANGE WORKERS BACK TO -1
 
-    with open('Results/Optimisation_resultx_{}_{}_{}.csv'.format(node,scenario,percapita), 'w', newline="") as csvfile:
+    with open('Results/Optimisation_resultx_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), 'w', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(result.x)
 
@@ -119,4 +121,4 @@ if __name__=='__main__':
     print("Optimisation took", endtime - starttime)
 
     from Dispatch import Analysis
-    Analysis(result.x,'_{}_{}_{}.csv'.format(node,scenario,percapita))
+    Analysis(result.x,'_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag))
