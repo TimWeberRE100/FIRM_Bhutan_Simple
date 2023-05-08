@@ -13,9 +13,9 @@ parser.add_argument('-i', default=1000, type=int, required=False, help='maxiter=
 parser.add_argument('-p', default=5, type=int, required=False, help='popsize=2, 10')
 parser.add_argument('-m', default=0.5, type=float, required=False, help='mutation=0.5')
 parser.add_argument('-r', default=0.3, type=float, required=False, help='recombination=0.3')
-parser.add_argument('-e', default=23, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year; prefix 2 for flat curves')
+parser.add_argument('-e', default=3200, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year; prefix 2 for flat curves; 3100, 3200 for universal flat')
 parser.add_argument('-n', default='Super', type=str, required=False, help='Super, CH, TH...')
-parser.add_argument('-s', default='existing', type=str, required=False, help='all, construction, existing')
+parser.add_argument('-s', default='uni100', type=str, required=False, help='all, construction, existing, uni200, uni100, uni50, uni0')
 parser.add_argument('-z', default='export', type=str, required=False, help='export, no_export')
 args = parser.parse_args()
 

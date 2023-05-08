@@ -20,12 +20,23 @@ MLoad = np.genfromtxt('Data/electricity{}.csv'.format(percapita), delimiter=',',
 TSPV = np.genfromtxt('Data/pv.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(PVl))) # TSPV(t, i), MW
 #TSWind = np.genfromtxt('Data/wind.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(Windl))) # TSWind(t, i), MW
 
-assets = np.genfromtxt('Data/assets_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+if 'uni'in scenario:
+    assets = np.genfromtxt('Data/assets_uni100.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+    constraints = np.genfromtxt('Data/constraints_existing.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+    if scenario == 'uni200':
+        assets = 2*assets
+    elif scenario == 'uni50':
+        assets = 0.5*assets
+    elif scenario == 'uni0':
+        assets = 0*assets
+else:
+    assets = np.genfromtxt('Data/assets_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+    constraints = np.genfromtxt('Data/constraints_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+
 CHydro = assets[:, 0] * pow(10, -3) # CHydro(j), MW to GW
-constraints = np.genfromtxt('Data/constraints_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
 EHydro = constraints[:, 0] # GWh per year
 baseload = np.genfromtxt('Data/RoR_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None).astype(float)
-hfactor1 = CHydro / CHydro.sum()
+hfactor1 = CHydro / CHydro.sum() if CHydro.sum() > 0 else 0*CHydro
 CBaseload = min(baseload)*resolution*pow(10,-3) * hfactor1 # MW to GW
 CPeak = CHydro - CBaseload # MW
 
