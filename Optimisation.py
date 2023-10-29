@@ -36,10 +36,8 @@ def F(x):
 
     CIndia = np.nan_to_num(np.array(S.CInter))
 
-    ##### NEED TO OUTPUT DISCHARGE_POND FROM RELIABILITY FUNCTION
-    
     # Simulation with only baseload
-    Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
+    Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
     Max_deficit1 = np.reshape(Deficit1, (-1, 8760)).sum(axis=-1) # MWh per year
     PIndia = Deficit1.max() * pow(10, -3) # GW
 
@@ -49,7 +47,7 @@ def F(x):
     PenPower = 0
     
     # Simulation with baseload, all existing capacity, and all hydrogen
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond = Reliability(S, baseload=baseload, india_imports=np.ones(intervals) * CIndia.sum() * pow(10,3), daily_pondage=daily_pondage)
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=np.ones(intervals) * CIndia.sum() * pow(10,3), daily_pondage=daily_pondage)
 
     # Deficit penalty function
     PenDeficit = max(0, Deficit.sum() * resolution - S.allowance)
@@ -58,7 +56,7 @@ def F(x):
     india_imports = np.clip(Deficit1, 0, CIndia.sum() * pow(10,3))
 
     # Simulation using the existing capacity generation profiles - required for storage average annual discharge
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
 
     # Discharged energy from storage systems
     GPHES = DischargePH.sum() * resolution / years * pow(10,-6) # TWh per year
@@ -76,14 +74,19 @@ def F(x):
     # Average annual electricity imported through external interconnections
     GIndia = resolution * india_imports.sum() / years / efficiencyPH
 
-    ###### ADD INDIA IMPORT COSTS TO THE FACTORS
+    # Assume all spillage, curtailment, and Hydro_CH2 generation is exported to india
+    export_annual = (Spillage.sum() + indiaExportProfiles.sum()) * resolution / years
+    Ghydro_CH2 = indiaExportProfiles.sum() * resolution / years
 
     # Levelised cost of electricity calculation
-    cost = factor * np.array([sum(S.CPV), GInter * pow(10,-6), sum(S.CPHP), S.CPHS] + list(CDC) + [sum(S.CPV), GHydro * pow(10, -6), 0, 0]) # $b p.a.
+    cost = factor * np.array([sum(S.CPV), 0, GIndia * pow(10,-6), sum(S.CPHP), S.CPHS, GPHES] + list(CDC) + [sum(S.CPV), 0, (GHydro + Ghydro_CH2) * pow(10, -6), 0, 0]) # $b p.a.
     cost = cost.sum()
     loss = np.sum(abs(TDC), axis=0) * TLoss
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
-    LCOE = cost / abs(energy - export_annual - loss)
+    LCOE = cost / abs(energy - loss) 
+    
+    ########### INCLUSION OF EXPORT ENERGY IN LCOE CALCULATION?###############
+    ### IF NO - REMOVE GHYDRO_CH2 FROM COSTS CALCULATION, REMOVE SPILLAGE FROM ENERGY CALCULATION
     
     with open('Results/record_{}_{}_{}_{}.csv'.format(node,scenario,percapita, export_flag), 'a', newline="") as csvfile:
         writer = csv.writer(csvfile)
@@ -107,7 +110,7 @@ if __name__=='__main__':
 
     result = differential_evolution(func=F, bounds=list(zip(lb, ub)), tol=0, # init=start,
                                     maxiter=args.i, popsize=args.p, mutation=args.m, recombination=args.r,
-                                    disp=True, polish=False, updating='deferred', workers=1) ###### CHANGE WORKERS BACK TO -1
+                                    disp=True, polish=False, updating='deferred', workers=-1) ###### CHANGE WORKERS BACK TO -1
 
     with open('Results/Optimisation_resultx_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), 'w', newline="") as csvfile:
         writer = csv.writer(csvfile)

@@ -106,4 +106,4 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     solution.DischargePH, solution.ChargePH, solution.StoragePH, solution.DischargePond, solution.StoragePond = (DischargePH, ChargePH, StoragePH, DischargePond, StoragePond)
     solution.Deficit_energy, solution.Deficit_power, solution.Deficit, solution.Spillage = (Deficit_energy, Deficit_power, Deficit, Spillage)
 
-    return Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond
+    return Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage

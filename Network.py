@@ -55,7 +55,7 @@ def Transmission(solution, output=False):
     efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
     MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor """
 
-    print(MLoad.shape,MChargePH.shape,MSpillage.shape,MPV.shape,MIndia.shape,MBaseload.shape,MPond.shape,MDischargePH.shape,MDeficit.shape)
+    #print(MLoad.shape,MChargePH.shape,MSpillage.shape,MPV.shape,MIndia.shape,MBaseload.shape,MPond.shape,MDischargePH.shape,MDeficit.shape)
 
     MImport = MLoad + MChargePH + MSpillage \
               - MPV - MIndia - MBaseload - MPond - MDischargePH - MDeficit # - MWind; EIM(t, j), MW
