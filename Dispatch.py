@@ -21,7 +21,7 @@ def Flexible(instance):
     startidx = int((24 / resolution) * (year-firstyear) * 365)
     endidx = int((24 / resolution) * (year+1-firstyear) * 365)
 
-    Fcapacity = CPeak.sum() * pow(10, 3) # GW to MW
+    Fcapacity = np.nan_to_num(np.array(S.CInter)).sum() * pow(10, 3) # GW to MW
     flexible = Fcapacity * np.ones(endidx - startidx)
 
     for i in range(0, endidx - startidx):
