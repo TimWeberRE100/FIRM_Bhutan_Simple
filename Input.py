@@ -8,8 +8,8 @@ from Optimisation import scenario, node, percapita, export_flag
 
 ######### DEBUG ##########
 """ scenario = 'existing'
-node = 'super'
-percapita = 3
+node = 'Super'
+percapita = 20
 export_flag = True """
 #########################
 

@@ -26,11 +26,11 @@ def Flexible(instance):
 
     for i in range(0, endidx - startidx):
         flexible[i] = 0
-        Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, baseload=baseload, flexible=flexible, start=startidx, end=endidx) # Sj-EDE(t, j), MW
+        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, start=startidx, end=endidx) # Sj-EDE(t, j), MW
         if Deficit.sum() * resolution > 0.1:
             flexible[i] = Fcapacity
 
-    Deficit_energy, Deficit_power, Deficit, DischargePH = Reliability(S, baseload=baseload, flexible=flexible, start=startidx, end=endidx) # Required after updating final interval of flexible
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, start=startidx, end=endidx) # Required after updating final interval of flexible
 
     flexible = np.clip(flexible - S.Spillage, 0, None)
 
@@ -46,6 +46,7 @@ def Analysis(x,suffix):
 
     # Multiprocessing
     pool = Pool(processes=min(cpu_count(), finalyear - firstyear + 1))
+    #print(cpu_count(), finalyear, firstyear)
     instances = map(lambda y: [y] + [x], range(firstyear, finalyear + 1))
     Dispresult = pool.map(Flexible, instances)
     pool.terminate()
@@ -62,6 +63,6 @@ def Analysis(x,suffix):
     return True
 
 if __name__ == '__main__':
-    suffix="_Super_existing_6.csv"
+    suffix="_Super_existing_20_True.csv"
     capacities = np.genfromtxt('Results/Optimisation_resultx'+suffix, delimiter=',')
     Analysis(capacities,suffix)

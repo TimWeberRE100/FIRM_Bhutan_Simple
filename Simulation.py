@@ -10,7 +10,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
 
     ###### CALCULATE NETLOAD FOR EACH INTERVAL ######
     Netload = (solution.MLoad.sum(axis=1) - solution.GPV.sum(axis=1) - baseload.sum(axis=1))[start:end] \
-                - india_imports[start:end] # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
+                - india_imports # - solution.GWind.sum(axis=1); Sj-ENLoad(j, t), MW
     length = len(Netload)
     
     solution.india_imports = india_imports # MW
