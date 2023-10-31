@@ -117,7 +117,7 @@ def GGTA(solution):
     # Import generation energy [GWh] from the least-cost solution
     GPV, GHydro, GIndia = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.MBaseload.sum() + solution.MPond.sum(), solution.MIndia.sum())) # TWh p.a.
     DischargePH = solution.DischargePH.sum()
-    Ghydro_CH2 = indiaExportProfiles.sum() * resolution / years
+    Ghydro_CH2 = indiaExportProfiles.sum() * pow(10, -6) * resolution / years
 #    GWind = solution.GWind.sum()
     CFPV = GPV / CPV / 8.76 if CPV != 0 else 0
 #    CFWind = GWind / CWind / 8.76
@@ -165,10 +165,10 @@ def GGTA(solution):
     
     # Calculate the levelised cost of generation
 #    LCOG = (CostPV + CostWind + CostHydro + CostBio) * pow(10, 3) / (GPV + GWind + GHydro + GBio)
-    LCOG = (CostPV + CostHydro + CostIndia) * pow(10, 3) / (GPV + GHydro + GIndia)
+    LCOG = (CostPV + CostHydro + CostIndia) * pow(10, 3) / (GPV + GHydro + GIndia + Ghydro_CH2)
     LCOGP = CostPV * pow(10, 3) / GPV if GPV!=0 else 0
 #    LCOGW = CostWind * pow(10, 3) / GWind if GWind!=0 else 0
-    LCOGH = CostHydro * pow(10, 3) / GHydro if GHydro!=0 else 0
+    LCOGH = CostHydro * pow(10, 3) / (GHydro + Ghydro_CH2) if (GHydro + Ghydro_CH2)!=0 else 0
     LCOGI = CostIndia * pow(10, 3) / GIndia if GIndia != 0 else 0
 
     # Calculate the levelised cost of balancing
