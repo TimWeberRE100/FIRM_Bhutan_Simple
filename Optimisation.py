@@ -10,7 +10,7 @@ import csv
 
 parser = ArgumentParser()
 parser.add_argument('-i', default=400, type=int, required=False, help='maxiter=4000, 400')
-parser.add_argument('-p', default=2, type=int, required=False, help='popsize=2, 10')
+parser.add_argument('-p', default=10, type=int, required=False, help='popsize=2, 10')
 parser.add_argument('-m', default=0.5, type=float, required=False, help='mutation=0.5')
 parser.add_argument('-r', default=0.3, type=float, required=False, help='recombination=0.3')
 parser.add_argument('-e', default=20, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year; prefix 2 for flat curves; 3100, 3200 for universal flat')
@@ -35,6 +35,7 @@ def F(x):
     S = Solution(x)
 
     CIndia = np.nan_to_num(np.array(S.CInter))
+    #print("India: ", CIndia," GW")
 
     # Simulation with only baseload
     Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
@@ -43,8 +44,8 @@ def F(x):
 
     GIndia = resolution * (Max_deficit1).max() / efficiencyPH
 
+    PenPower = max(0, PIndia - CIndia.sum()) * pow(10,3)
     PenEnergy = 0
-    PenPower = 0
     
     # Simulation with baseload, all existing capacity, and all hydrogen
     Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=np.ones(intervals) * CIndia.sum() * pow(10,3), daily_pondage=daily_pondage)
@@ -53,7 +54,7 @@ def F(x):
     PenDeficit = max(0, Deficit.sum() * resolution - S.allowance)
 
     # India import profile
-    india_imports = np.clip(Deficit1, 0, CIndia.sum() * pow(10,3))
+    india_imports = np.clip(Deficit1, 0, CIndia.sum() * pow(10,3)) # MW
 
     # Simulation using the existing capacity generation profiles - required for storage average annual discharge
     Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
@@ -84,6 +85,8 @@ def F(x):
     loss = np.sum(abs(TDC), axis=0) * TLoss
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
     LCOE = cost / abs(energy - loss) 
+
+    #print("Costs: ",energy, loss, cost, LCOE)
     
     ########### INCLUSION OF EXPORT ENERGY IN LCOE CALCULATION?###############
     ### IF NO - REMOVE GHYDRO_CH2 FROM COSTS CALCULATION, REMOVE SPILLAGE FROM ENERGY CALCULATION

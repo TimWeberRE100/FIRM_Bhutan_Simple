@@ -165,10 +165,10 @@ contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:(nodes)] # MW t
 allowance = min(0.00002*np.reshape(MLoad.sum(axis=1), (-1, 8760)).sum(axis=-1)) # Allowable annual deficit of 0.002%, MWh
 
 ###### DECISION VARIABLE UPPER BOUNDS ######
-pv_ub = [500.] * pzones
-phes_ub = [500.] * nodes
-phes_s_ub = [10000.]
-inters_ub = [500.] * inters
+pv_ub = [5.] * pzones
+phes_ub = [10.] * nodes
+phes_s_ub = [100.]
+inters_ub = [5.] * inters
 
 class Solution:
     """A candidate solution of decision variables CPV(i), CWind(i), CPHP(j), S-CPHS(j)"""
@@ -193,7 +193,7 @@ class Solution:
         self.efficiencyPH = efficiencyPH
 
         self.CInter = list(x[phidx+1: ]) if node == 'Super' else len(Interl)*[0] #CInter(j), GW
-        self.GInter = np.tile(self.CInter, (intervals, 1)) * pow(10,3) # GInter(j, t), GW to MW
+        self.GIndia = np.tile(self.CInter, (intervals, 1)) * pow(10,3) # GInter(j, t), GW to MW
 
         self.Nodel, self.PVl, self.Hydrol = (Nodel, PVl, hydrol)
         self.Interl = Interl

@@ -91,7 +91,7 @@ def Transmission(solution, output=False):
 
     if output:
         MStoragePH = np.tile(solution.StoragePH, (nodes, 1)).transpose() * pcfactor # SPH(t, j), MWh
-        solution.MPV, solution.MInter, solution.MHydro = (MPV, MInter, MHydro)
+        solution.MPV, solution.MIndia, solution.MBaseload, solution.MPond = (MPV, MIndia, MBaseload, MPond)
 #        solution.MWind = MWind        
         solution.MDischargePH, solution.MChargePH, solution.MStoragePH = (MDischargePH, MChargePH, MStoragePH)
         solution.MDeficit, solution.MSpillage = (MDeficit, MSpillage)

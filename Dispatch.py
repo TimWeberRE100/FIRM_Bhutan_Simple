@@ -27,6 +27,7 @@ def Flexible(instance):
     for i in range(0, endidx - startidx):
         flexible[i] = 0
         Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, start=startidx, end=endidx) # Sj-EDE(t, j), MW
+        #print(year, i, Deficit.sum(), DischargePond.sum(), baseload.sum())
         if Deficit.sum() * resolution > 0.1:
             flexible[i] = Fcapacity
 
