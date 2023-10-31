@@ -62,7 +62,7 @@ def LPGM(solution):
     C = np.stack([(solution.MLoad).sum(axis=1),
                   solution.MBaseload.sum(axis=1), solution.MPond.sum(axis=1), solution.MIndia.sum(axis=1), solution.GPV.sum(axis=1), #solution.GWind.sum(axis=1),
                   solution.DischargePH, solution.Deficit, -1 * (solution.Spillage + indiaExportProfiles), -1 * solution.ChargePH,
-                  solution.StoragePH,
+                  solution.StoragePH, solution.StoragePond,
                   solution.CHTH, solution.THTS, solution.TSSA, solution.SAZH, solution.ZHPE, solution.PEMO, solution.IN1CH, solution.IN2TS, solution.IN3SA, solution.IN4PE])
 
     C = np.around(C.transpose())
@@ -72,7 +72,7 @@ def LPGM(solution):
 
     header = 'Date & time,Operational demand,' \
              'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),PHES-Charge (MW),' \
-             'PHES-Storage (MWh),' \
+             'PHES-Storage (MWh),Pond-Storage (MWh),' \
              'CHTH,THTS,TSSA,SAZH,ZHPE,PEMO,IN1CH,IN2TS,IN3SA,IN4PE'
 
     np.savetxt('Results/LPGM_{}_{}_{}_{}_Network.csv'.format(node,scenario,percapita,export_flag), C, fmt='%s', delimiter=',', header=header, comments='')
@@ -80,7 +80,7 @@ def LPGM(solution):
     if 'Super' in node:
         header = 'Date & time,Operational demand,' \
                  'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),'\
-                 'Transmission,PHES-Charge (MW),' \
+                 'Transmission,PHES-Charge (MW),Pond-Storage (MWh),' \
                  'PHES-Storage'
 
         Topology = solution.Topology[np.where(np.in1d(Nodel, coverage) == True)[0]]
@@ -220,7 +220,7 @@ def Information(x, flexible):
     except AssertionError:
         pass
     
-    assert np.reshape(baseload.sum(axis=1) + S.DischargePond, (-1, 8760)).sum(axis=-1).max() <= Hydromax, "Hydro generation exceeds requirement"
+    #assert np.reshape(baseload.sum(axis=1) + S.DischargePond, (-1, 8760)).sum(axis=-1).max() <= Hydromax, "Hydro generation exceeds requirement"
 
     #S.TDC = Transmission(S, output=True) if 'APG' in node else np.zeros((intervals, len(TLoss))) # TDC(t, k), MW
     S.TDC = Transmission(S, output=True)

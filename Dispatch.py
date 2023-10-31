@@ -29,7 +29,7 @@ def Flexible(instance):
         Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, start=startidx, end=endidx) # Sj-EDE(t, j), MW
         #print(year, i, Deficit.sum(), DischargePond.sum(), baseload.sum())
         if Deficit.sum() * resolution > 0.1:
-            flexible[i] = Fcapacity
+            flexible[i] = Fcapacity - DischargePond[i] - DischargePH[i]
 
     Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, start=startidx, end=endidx) # Required after updating final interval of flexible
 

@@ -18,7 +18,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     ###### CREATE STORAGE SYSTEM VARIABLES ######
     Pcapacity_PH = sum(solution.CPHP) * pow(10, 3) # S-CPHP(j), GW to MW
     Scapacity_PH = solution.CPHS * pow(10, 3) # S-CPHS(j), GWh to MWh
-    Pcapacity_Pond = sum(solution.CHydro_Pond)
+    Pcapacity_Pond = sum(solution.CHydro_Pond) * pow(10, 3)
     #Scapacity_Pond = [4*x for x in solution.CHydro_Pond]
     efficiencyPH, resolution = (solution.efficiencyPH, solution.resolution)
 
