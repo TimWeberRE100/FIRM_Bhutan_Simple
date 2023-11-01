@@ -25,8 +25,6 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     DischargePH, ChargePH, StoragePH, DischargePond, StoragePond = map(np.zeros, [length] * 5)
     Deficit_energy, Deficit_power = map(np.zeros, [length] * 2)
     
-    Storage_Pond_t1 = [0] * len(solution.CHydro_Pond)
-
     daily_pondage_divided = daily_pondage.sum(axis=1) / 24
 
     for t in range(length):
@@ -39,7 +37,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
         if t % 24 == 0:
             Storage_Pond_t1 = daily_pondage_divided[t]
         else:
-            Storage_Pond_t1 += daily_pondage_divided[t]
+            Storage_Pond_t1 = StoragePond[t-1] + daily_pondage_divided[t]
 
         # Calculate pond discharge
         Discharge_Pond_t = np.minimum(np.maximum(0, Netloadt), Pcapacity_Pond)
@@ -48,6 +46,18 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
 
         DischargePond[t] = Discharge_Pond_t
         StoragePond[t] = Storage_Pond_t
+
+        if (t - 1 % 24 == 0):
+            pond_daily_exports = StoragePond[t]
+            counter = 0
+            while ((pond_daily_exports > 0.1) & (counter < 24)):
+                discharge_pond_original = DischargePond[t - counter]
+                DischargePond[t - counter] = np.minimum(Pcapacity_Pond, discharge_pond_original + StoragePond[t]/resolution)
+                exported_pond_t = DischargePond[t - counter] - discharge_pond_original
+                StoragePond[t - counter] = StoragePond[t - counter] - exported_pond_t * resolution
+
+                pond_daily_exports -= exported_pond_t
+                counter+=1
 
         """ if t==0:
             print(Netloadt, Pcapacity_Pond, Discharge_Pond_t) 

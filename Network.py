@@ -10,7 +10,7 @@ def Transmission(solution, output=False):
 
     Nodel, PVl, Interl, Hydrol = (solution.Nodel, solution.PVl, solution.Interl, solution.Hydrol)
 #    Windl = solution.Windl
-    intervals, nodes = (solution.intervals, solution.nodes)
+    intervals, nodes, inters = (solution.intervals, solution.nodes, len(Interl))
     
     CHydro_Pond = solution.CHydro_Pond
     pondfactor = np.tile(CHydro_Pond, (intervals, 1)) / sum(CHydro_Pond) if sum(CHydro_Pond) != 0 else 0
@@ -33,17 +33,21 @@ def Transmission(solution, output=False):
     defactor = MLoad / MLoad.sum(axis=1)[:, None]
     MDeficit = np.tile(solution.Deficit, (nodes, 1)).transpose() * defactor # MDeficit: EDE(j, t)
 
-    M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
-    MPW = MPV + M_minFactors # + MWind
-    spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
-    MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
+    CIndia = np.append(np.array([0]*(nodes-len(solution.Interl))), np.nan_to_num(np.array(solution.CInter))) # GW
+    if solution.export_flag:
+        expfactor = np.tile(CIndia, (intervals, 1)) / sum(CIndia) if sum(CIndia) != 0 else 0
+        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
+    else:
+        M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
+        MPW = MPV + M_minFactors # + MWind
+        spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
+        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
 
     CPHP = solution.CPHP
     pcfactor = np.tile(CPHP, (intervals, 1)) / sum(CPHP) if sum(CPHP) != 0 else 0
     MDischargePH = np.tile(solution.DischargePH, (nodes, 1)).transpose() * pcfactor # MDischarge: DPH(j, t)
     MChargePH = np.tile(solution.ChargePH, (nodes, 1)).transpose() * pcfactor # MCharge: CHPH(j, t)
 
-    CIndia = np.append(np.array([0]*(nodes-len(solution.Interl))), np.nan_to_num(np.array(solution.CInter))) # GW
     india_imports = solution.india_imports # MW
     if CIndia.sum() == 0:
         ifactor = np.tile(CIndia, (intervals, 1))

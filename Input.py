@@ -10,14 +10,15 @@ from Optimisation import scenario, node, percapita, export_flag
 """ scenario = 'existing'
 node = 'Super'
 percapita = 20
-export_flag = True """
+export_flag = True
+import_flag = True """
 #########################
 
 ###### NODAL LISTS ######
 Nodel = np.array(['CH', 'TH', 'TS', 'SA', 'ZH', 'PE', 'MO', 'IN1', 'IN2', 'IN3', 'IN4'])
 PVl =   np.array(['CH']*1 + ['TH']*1 + ['TS']*1 + ['SA']*1 + ['ZH']*1 + ['PE']*1 + ['MO']*1)
 #Windl = np.array(['ME']*1 + ['SB']*1 + ['TE']*1 + ['PA']*1 + ['SE']*1 + ['PE']*1 + ['JO']*1 + ['KT']*1 + ['KD']*1 + ['SW']*1)
-Interl = np.array(['IN1']*1 + ['IN2']*1 + ['IN3']*1 + ['IN4']*1) if node=='Super' else np.array([]) # Add external interconnections if ASEAN Power Grid scenario
+Interl = np.array(['IN1']*1 + ['IN2']*1 + ['IN3']*1 + ['IN4']*1) if ((node=='Super') & import_flag) else np.array([]) # Add external interconnections if ASEAN Power Grid scenario
 resolution = 1
 
 ###### DATA IMPORTS ######
@@ -165,10 +166,10 @@ contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:(nodes)] # MW t
 allowance = min(0.00002*np.reshape(MLoad.sum(axis=1), (-1, 8760)).sum(axis=-1)) # Allowable annual deficit of 0.002%, MWh
 
 ###### DECISION VARIABLE UPPER BOUNDS ######
-pv_ub = [5.] * pzones
-phes_ub = [10.] * nodes
-phes_s_ub = [100.]
-inters_ub = [5.] * inters
+pv_ub = [20.] * pzones
+phes_ub = [20.] * nodes
+phes_s_ub = [200.]
+inters_ub = [20.] * inters if import_flag else []
 
 class Solution:
     """A candidate solution of decision variables CPV(i), CWind(i), CPHP(j), S-CPHS(j)"""
@@ -200,6 +201,8 @@ class Solution:
 #        self.Windl = Windl
         self.node = node
         self.scenario = scenario
+        self.export_flag = export_flag
+        self.import_flag = import_flag
         self.allowance = allowance
         self.coverage = coverage
         self.TLoss = TLoss
