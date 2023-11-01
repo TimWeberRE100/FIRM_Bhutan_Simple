@@ -4,7 +4,7 @@
 # Correspondence: bin.lu@anu.edu.au
 
 import numpy as np
-from Optimisation import scenario, node, percapita, export_flag
+from Optimisation import scenario, node, percapita, export_flag, import_flag
 
 ######### DEBUG ##########
 """ scenario = 'existing'
