@@ -19,7 +19,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     Pcapacity_PH = sum(solution.CPHP) * pow(10, 3) # S-CPHP(j), GW to MW
     Scapacity_PH = solution.CPHS * pow(10, 3) # S-CPHS(j), GWh to MWh
     Pcapacity_Pond = sum(solution.CHydro_Pond) * pow(10, 3)
-    #Scapacity_Pond = [4*x for x in solution.CHydro_Pond]
+    Scapacity_Pond = 4*Pcapacity_Pond
     efficiencyPH, resolution = (solution.efficiencyPH, solution.resolution)
 
     DischargePH, ChargePH, StoragePH, DischargePond, StoragePond = map(np.zeros, [length] * 5)
@@ -34,20 +34,20 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
         Netloadt = Netload[t]
         Storage_PH_t1 = StoragePH[t-1] if t>0 else 0.5 * Scapacity_PH
 
-        if t % 24 == 0:
-            Storage_Pond_t1 = daily_pondage_divided[t]
-        else:
-            Storage_Pond_t1 = StoragePond[t-1] + daily_pondage_divided[t]
+        Storage_Pond_t1 = StoragePond[t-1] + daily_pondage_divided[t] if t>0 else 0.5*Scapacity_Pond
 
         # Calculate pond discharge
-        Discharge_Pond_t = np.minimum(np.maximum(0, Netloadt), Pcapacity_Pond)
-        Discharge_Pond_t = np.minimum(Discharge_Pond_t, Storage_Pond_t1/resolution)
+        if Scapacity_Pond < Storage_Pond_t1:
+            Discharge_Pond_t = daily_pondage_divided[t]
+        else:
+            Discharge_Pond_t = np.minimum(np.maximum(0, Netloadt), Pcapacity_Pond)
+            Discharge_Pond_t = np.minimum(Discharge_Pond_t, Storage_Pond_t1/resolution)
         Storage_Pond_t = Storage_Pond_t1 - Discharge_Pond_t * resolution
 
         DischargePond[t] = Discharge_Pond_t
         StoragePond[t] = Storage_Pond_t
 
-        if (t - 1 % 24 == 0):
+        """ if ((t + 1) % 24 == 0):
             pond_daily_exports = StoragePond[t]
             counter = 0
             while ((pond_daily_exports > 0.1) & (counter < 24)):
@@ -57,7 +57,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
                 StoragePond[t - counter] = StoragePond[t - counter] - exported_pond_t * resolution
 
                 pond_daily_exports -= exported_pond_t
-                counter+=1
+                counter+=1 """
 
         """ if t==0:
             print(Netloadt, Pcapacity_Pond, Discharge_Pond_t) 

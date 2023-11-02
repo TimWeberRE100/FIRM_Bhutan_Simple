@@ -7,11 +7,11 @@ import numpy as np
 from Optimisation import scenario, node, percapita, export_flag, import_flag
 
 ######### DEBUG ##########
-""" scenario = 'existing'
+scenario = 'existing'
 node = 'Super'
-percapita = 20
+percapita = 3
 export_flag = True
-import_flag = True """
+import_flag = True
 #########################
 
 ###### NODAL LISTS ######
@@ -64,7 +64,7 @@ indiaExportProfiles = hydroProfiles[:,1] # Tala power station is full export to 
 
 for i in range(0,len(hydroProfiles[0])):
     hydroProfiles[i,1] = 0
-
+CHydro_Pond[1] = 0
 #print(hydroProfiles)
 
 baseload = np.ones((MLoad.shape[0], len(CHydro_RoR)))

@@ -78,7 +78,7 @@ def F(x):
     GIndia = resolution * india_imports.sum() / years / efficiencyPH
 
     # Assume all spillage, curtailment, and Hydro_CH2 generation is exported to india
-    export_annual = (Spillage.sum() + indiaExportProfiles.sum()) * resolution / years
+    export_annual = (Spillage.sum() + indiaExportProfiles.sum()) * resolution / years * pow(10,-9)
     Ghydro_CH2 = indiaExportProfiles.sum() * resolution / years
 
     # Levelised cost of electricity calculation
@@ -86,7 +86,7 @@ def F(x):
     cost = cost.sum()
     loss = np.sum(abs(TDC), axis=0) * TLoss
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
-    LCOE = cost / abs(energy - loss) 
+    LCOE = cost / abs(export_annual + energy - loss) 
 
     #print("Costs: ",energy, loss, cost, LCOE)
     

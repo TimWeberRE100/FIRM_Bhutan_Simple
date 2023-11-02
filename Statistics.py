@@ -60,7 +60,7 @@ def LPGM(solution):
     Debug(solution)
 
     C = np.stack([(solution.MLoad).sum(axis=1),
-                  solution.MBaseload.sum(axis=1), solution.MPond.sum(axis=1), solution.MIndia.sum(axis=1), solution.GPV.sum(axis=1), #solution.GWind.sum(axis=1),
+                  solution.MBaseload.sum(axis=1) + indiaExportProfiles, solution.MPond.sum(axis=1), solution.MIndia.sum(axis=1), solution.GPV.sum(axis=1), #solution.GWind.sum(axis=1),
                   solution.DischargePH, solution.Deficit, -1 * (solution.Spillage + indiaExportProfiles), -1 * solution.ChargePH,
                   solution.StoragePH, solution.StoragePond,
                   solution.CHTH, solution.THTS, solution.TSSA, solution.SAZH, solution.ZHPE, solution.PEMO, solution.IN1CH, solution.IN2TS, solution.IN3SA, solution.IN4PE])
@@ -89,7 +89,7 @@ def LPGM(solution):
             MCH2_exports = np.zeros(intervals) if j != 1 else indiaExportProfiles
 
             C = np.stack([(solution.MLoad)[:, j],
-                          solution.MBaseload[:, j], solution.MPond[:, j],solution.MIndia[:, j], solution.MPV[:, j], #solution.MWind[:, j],
+                          solution.MBaseload[:, j] + MCH2_exports, solution.MPond[:, j],solution.MIndia[:, j], solution.MPV[:, j], #solution.MWind[:, j],
                           solution.MDischargePH[:, j], solution.MDeficit[:, j], -1 * (solution.MSpillage[:, j] + MCH2_exports), Topology[j], 
                           -1 * solution.MChargePH[:, j],
                           solution.MStoragePH[:, j]])
@@ -115,9 +115,9 @@ def GGTA(solution):
     CapHydro = CHydro_max.sum() # GW
 
     # Import generation energy [GWh] from the least-cost solution
-    GPV, GHydro, GIndia = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.MBaseload.sum() + solution.MPond.sum(), solution.MIndia.sum())) # TWh p.a.
+    Ghydro_CH2 = indiaExportProfiles.sum() 
+    GPV, GHydro, GIndia = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.MBaseload.sum() + solution.MPond.sum() + Ghydro_CH2, solution.MIndia.sum())) # TWh p.a.
     DischargePH = solution.DischargePH.sum()
-    Ghydro_CH2 = indiaExportProfiles.sum() * pow(10, -6) * resolution / years
 #    GWind = solution.GWind.sum()
     CFPV = GPV / CPV / 8.76 if CPV != 0 else 0
 #    CFWind = GWind / CWind / 8.76
@@ -125,7 +125,7 @@ def GGTA(solution):
     # Calculate the annual costs for each technology
     CostPV = factor['PV'] * CPV # A$b p.a.
 #    CostWind = factor['Wind'] * CWind # A$b p.a.
-    CostHydro = factor['Hydro'] * (GHydro + Ghydro_CH2) # A$b p.a.
+    CostHydro = factor['Hydro'] * GHydro # A$b p.a.
     CostPH = factor['PHP'] * CPHP + factor['PHS'] * CPHS + factor['PHES-VOM'] * DischargePH * pow(10, -6) * resolution / years # A$b p.a.
     CostIndia = factor['India'] * GIndia # A$b p.a.
 #    if scenario>=21:
@@ -149,32 +149,32 @@ def GGTA(solution):
     
     # Calculate the average annual energy demand
     Energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
-    Exports = indiaExportProfiles.sum() + solution.MSpillage.sum()
+    Exports = (indiaExportProfiles.sum() + solution.MSpillage.sum()) * pow(10,-6) * resolution / years
     Loss = np.sum(abs(solution.TDC), axis=0) * TLoss
     Loss = Loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
 
     # Calculate the levelised cost of elcetricity at a network level
-    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC) / (Energy - Loss) # + CostWind / (Energy - Loss)
-    LCOEPV = CostPV / (Energy - Loss)
+    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC) / (Exports*pow(10,-3) + Energy - Loss) # + CostWind / (Energy - Loss)
+    LCOEPV = CostPV / (Exports*pow(10,-3)  + Energy - Loss)
 #    LCOEWind = CostWind / (Energy - Loss)
-    LCOEIndia = CostIndia / (Energy - Loss)
-    LCOEHydro = CostHydro / (Energy - Loss)
-    LCOEPH = CostPH / (Energy - Loss)
-    LCOEDC = CostDC / (Energy - Loss)
-    LCOEAC = CostAC / (Energy - Loss)
+    LCOEIndia = CostIndia / (Exports*pow(10,-3)  + Energy - Loss)
+    LCOEHydro = CostHydro / (Exports*pow(10,-3)  + Energy - Loss)
+    LCOEPH = CostPH / (Exports*pow(10,-3)  + Energy - Loss)
+    LCOEDC = CostDC / (Exports*pow(10,-3)  + Energy - Loss)
+    LCOEAC = CostAC / (Exports*pow(10,-3)  + Energy - Loss)
     
     # Calculate the levelised cost of generation
 #    LCOG = (CostPV + CostWind + CostHydro + CostBio) * pow(10, 3) / (GPV + GWind + GHydro + GBio)
-    LCOG = (CostPV + CostHydro + CostIndia) * pow(10, 3) / (GPV + GHydro + GIndia + Ghydro_CH2)
+    LCOG = (CostPV + CostHydro + CostIndia) * pow(10, 3) / (GPV + GHydro + GIndia)
     LCOGP = CostPV * pow(10, 3) / GPV if GPV!=0 else 0
 #    LCOGW = CostWind * pow(10, 3) / GWind if GWind!=0 else 0
-    LCOGH = CostHydro * pow(10, 3) / (GHydro + Ghydro_CH2) if (GHydro + Ghydro_CH2)!=0 else 0
+    LCOGH = CostHydro * pow(10, 3) / (GHydro) if (GHydro)!=0 else 0
     LCOGI = CostIndia * pow(10, 3) / GIndia if GIndia != 0 else 0
 
     # Calculate the levelised cost of balancing
     LCOB = LCOE - LCOG
-    LCOBS_P = CostPH / (Energy - Loss)
-    LCOBT = (CostDC + CostAC) / (Energy - Loss)
+    LCOBS_P = CostPH / (Exports*pow(10,-3) + Energy - Loss)
+    LCOBT = (CostDC + CostAC) / (Exports*pow(10,-3)  + Energy - Loss)
     LCOBL = LCOB - LCOBS_P - LCOBT
 
     print('Levelised costs of electricity:')
