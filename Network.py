@@ -8,45 +8,61 @@ import numpy as np
 def Transmission(solution, output=False):
     """TDC = Network.Transmission(S)"""
 
-    Nodel, PVl, Interl = (solution.Nodel, solution.PVl, solution.Interl)
+    Nodel, PVl, Interl, Hydrol = (solution.Nodel, solution.PVl, solution.Interl, solution.Hydrol)
 #    Windl = solution.Windl
-    intervals, nodes = (solution.intervals, solution.nodes)
+    intervals, nodes, inters = (solution.intervals, solution.nodes, len(Interl))
+    
+    CHydro_Pond = solution.CHydro_Pond
+    pondfactor = np.tile(CHydro_Pond, (intervals, 1)) / sum(CHydro_Pond) if sum(CHydro_Pond) != 0 else 0
+    MPond_long = np.tile(solution.DischargePond, (len(CHydro_Pond), 1)).transpose() * pondfactor 
 
-    MPV, MInter = map(np.zeros, [(nodes, intervals)] * 2)
+    MPV, MBaseload, MPond = map(np.zeros, [(nodes, intervals)] * 3)
 #    MWind = map(np.zeros, [(nodes, intervals)] * 1)
     for i, j in enumerate(Nodel):
         MPV[i, :] = solution.GPV[:, np.where(PVl==j)[0]].sum(axis=1)
 #        MWind[i, :] = solution.GWind[:, np.where(Windl==j)[0]].sum(axis=1)
-        if solution.node=='Super':
-            MInter[i, :] = solution.GInter[:, np.where(Interl==j)[0]].sum(axis=1)
-    MPV, MInter = (MPV.transpose(), MInter.transpose()) # Sij-GPV(t, i), Sij-GWind(t, i), MW
+        MBaseload[i, :] = solution.baseload[:, np.where(Hydrol==j)[0]].sum(axis=1)
+        MPond[i, :] = MPond_long[:, np.where(Hydrol==j)[0]].sum(axis=1)
+        """ if solution.node=='Super':
+            MInter[i, :] = solution.GInter[:, np.where(Interl==j)[0]].sum(axis=1) """
+    MPV, MBaseload, MPond = (MPV.transpose(), MBaseload.transpose(), MPond.transpose()) # Sij-GPV(t, i), Sij-GWind(t, i), MW
 #    MWind = MWind.transpose()
-  
-    CHydro = solution.CHydro
-    hfactor = np.tile(CHydro,(intervals, 1)) / CHydro.sum() if CHydro.sum() > 0 else np.tile(CHydro,(intervals, 1))
-    MHydro = np.tile(solution.hydro, (nodes, 1)).transpose() * hfactor
     
     MLoad = solution.MLoad # EOLoad(t, j), MW
 
     defactor = MLoad / MLoad.sum(axis=1)[:, None]
     MDeficit = np.tile(solution.Deficit, (nodes, 1)).transpose() * defactor # MDeficit: EDE(j, t)
 
-    M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
-    MPW = MPV + M_minFactors # + MWind
-    spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
-    MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
+    CIndia = np.append(np.array([0]*(nodes-len(solution.Interl))), np.nan_to_num(np.array(solution.CInter))) # GW
+    if solution.export_flag:
+        expfactor = np.tile(CIndia, (intervals, 1)) / sum(CIndia) if sum(CIndia) != 0 else 0
+        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
+    else:
+        M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
+        MPW = MPV + M_minFactors # + MWind
+        spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
+        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
 
     CPHP = solution.CPHP
     pcfactor = np.tile(CPHP, (intervals, 1)) / sum(CPHP) if sum(CPHP) != 0 else 0
     MDischargePH = np.tile(solution.DischargePH, (nodes, 1)).transpose() * pcfactor # MDischarge: DPH(j, t)
     MChargePH = np.tile(solution.ChargePH, (nodes, 1)).transpose() * pcfactor # MCharge: CHPH(j, t)
 
-    exportNodes = np.array([0,0,0,0,0,0,0,CHydro[0]+CHydro[1], CHydro[2], CHydro[3]+CHydro[4], CHydro[5]+CHydro[6]]) # Electricity exported to each node proportional to the capacity of hydro nearest that interconnection
-    efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
-    MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor
+    india_imports = solution.india_imports # MW
+    if CIndia.sum() == 0:
+        ifactor = np.tile(CIndia, (intervals, 1))
+    else:
+        ifactor = np.tile(CIndia, (intervals, 1)) / CIndia.sum()
+    MIndia = np.tile(india_imports, (nodes, 1)).transpose() * ifactor
 
-    MImport = MLoad + MChargePH + MSpillage - MExport \
-              - MPV - MInter - MHydro - MDischargePH - MDeficit # - MWind; EIM(t, j), MW
+    """ exportNodes = np.array([0,0,0,0,0,0,0,CHydro[0]+CHydro[1], CHydro[2], CHydro[3]+CHydro[4], CHydro[5]+CHydro[6]]) # Electricity exported to each node proportional to the capacity of hydro nearest that interconnection
+    efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
+    MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor """
+
+    #print(MLoad.shape,MChargePH.shape,MSpillage.shape,MPV.shape,MIndia.shape,MBaseload.shape,MPond.shape,MDischargePH.shape,MDeficit.shape)
+
+    MImport = MLoad + MChargePH + MSpillage \
+              - MPV - MIndia - MBaseload - MPond - MDischargePH - MDeficit # - MWind; EIM(t, j), MW
     
     coverage = solution.coverage
     if len(coverage) > 1:
@@ -79,7 +95,7 @@ def Transmission(solution, output=False):
 
     if output:
         MStoragePH = np.tile(solution.StoragePH, (nodes, 1)).transpose() * pcfactor # SPH(t, j), MWh
-        solution.MPV, solution.MInter, solution.MHydro = (MPV, MInter, MHydro)
+        solution.MPV, solution.MIndia, solution.MBaseload, solution.MPond = (MPV, MIndia, MBaseload, MPond)
 #        solution.MWind = MWind        
         solution.MDischargePH, solution.MChargePH, solution.MStoragePH = (MDischargePH, MChargePH, MStoragePH)
         solution.MDeficit, solution.MSpillage = (MDeficit, MSpillage)
