@@ -104,9 +104,9 @@ if __name__=='__main__':
 
     result = differential_evolution(func=F, bounds=list(zip(lb, ub)), tol=0, # init=start,
                                     maxiter=args.i, popsize=args.p, mutation=args.m, recombination=args.r,
-                                    disp=True, polish=False, updating='deferred', workers=8) ###### CHANGE WORKERS BACK TO -1
+                                    disp=True, polish=False, updating='deferred', workers=-1) ###### CHANGE WORKERS BACK TO -1
 
-    with open('Results/Optimisation_resultx_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), 'w', newline="") as csvfile:
+    with open('Results/Optimisation_resultx_{}_{}_{}_{}.csv'.format(node,scenario,percapita,import_flag), 'w', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(result.x)
 
@@ -114,4 +114,4 @@ if __name__=='__main__':
     print("Optimisation took", endtime - starttime)
 
     from Fill import Analysis
-    Analysis(result.x,'_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag))
+    Analysis(result.x,'_{}_{}_{}_{}.csv'.format(node,scenario,percapita,import_flag))

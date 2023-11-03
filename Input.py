@@ -9,7 +9,7 @@ from Optimisation import scenario, node, percapita, export_flag, import_flag
 ######### DEBUG ##########
 """ scenario = 'existing'
 node = 'Super'
-percapita = 3
+percapita = 20
 export_flag = True
 import_flag = True """
 #########################
@@ -90,7 +90,7 @@ for i in range(0,MLoad.shape[0]):
     exports[exports > 0] = 0
 elif export_flag == 'no_export':
     exports = np.zeros(MLoad.shape[0])
-else:
+else:CHydro_max
     print("Export flag error") """
 
 ###### CONSTRAINTS ######
