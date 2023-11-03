@@ -21,8 +21,6 @@ def Transmission(solution, domestic_only=False, export_only=False, output=False)
         MWind[i, :] = solution.GWind[:, np.where(Windl==j)[0]].sum(axis=1)
         MBaseload[i, :] = solution.baseload[:, np.where(Hydrol==j)[0]].sum(axis=1)
         MPond[i, :] = MPond_long[:, np.where(Hydrol==j)[0]].sum(axis=1)
-        """ if solution.node=='Super':
-            MInter[i, :] = solution.GInter[:, np.where(Interl==j)[0]].sum(axis=1) """
     MPV, MBaseload, MPond, MWind = (MPV.transpose(), MBaseload.transpose(), MPond.transpose(), MWind.transpose()) # Sij-GPV(t, i), Sij-GWind(t, i), MW
     
     MLoad = solution.MLoad # EOLoad(t, j), MW
@@ -50,8 +48,6 @@ def Transmission(solution, domestic_only=False, export_only=False, output=False)
     MHydro_CH2 = np.tile(solution.indiaExportProfiles, (nodes, 1)).transpose() * ch2factor
 
     if solution.export_flag:
-        """ print(expl)
-        print(solution.CHydro_max[expl=="IN1"].sum()) """
         CHydro_nodes = np.zeros(nodes)
         for j in range(0,len(Nodel)):
             CHydro_nodes[j] = solution.CHydro_max[expl==Nodel[j]].sum()
@@ -87,16 +83,12 @@ def Transmission(solution, domestic_only=False, export_only=False, output=False)
         p1factor = np.divide(MPond, MPond.sum(axis=1)[:, None], where=MPond.sum(axis=1)[:, None]!=0)
         MPond_exp  = np.tile(PondExports, (nodes, 1)).transpose() * p1factor
         
-        #print(sum(PondExports + SolarExports + BaseloadExports + WindExports - MSpillage_exp.sum(axis=1))) 
-        
     else:
         M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
         MPW = MPV + M_minFactors + MWind + MPond
         spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
         MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
         MSpillage_exp = np.zeros((nodes, intervals)).transpose()
-
-    #print(MLoad.shape,MChargePH.shape,MSpillage.shape,MPV.shape,MIndia.shape,MBaseload.shape,MPond.shape,MDischargePH.shape,MDeficit.shape)
 
     if domestic_only:
         MImport = MLoad + MChargePH + MSpillage + \
@@ -108,10 +100,6 @@ def Transmission(solution, domestic_only=False, export_only=False, output=False)
         MImport = MLoad + MChargePH + MSpillage_exp + MSpillage + MExport \
               - MPV - MWind - MIndia - MBaseload - MPond - MDischargePH - MDeficit - MHydro_CH2 # EIM(t, j), MW
     
-    """ test = 30874
-    print(MBaseload[test],"\n",MChargePH[test],"\n", MLoad[test], "\n",MIndia[test], "\n",MDischargePH[test], "\n",MDeficit[test])
-    print(MSpillage_exp.sum(axis=1)[test],MExport.sum(axis=1)[test],MHydro_CH2.sum(axis=1)[test],MBaseload_exp.sum(axis=1)[test],MPV_exp.sum(axis=1)[test],MWind_exp.sum(axis=1)[test],MPond_exp.sum(axis=1)[test])
- """
     coverage = solution.coverage
     if len(coverage) > 1:
         # Imorts into external nodes

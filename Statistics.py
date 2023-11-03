@@ -38,7 +38,7 @@ def Debug(solution):
         # Capacity: PV, wind, Discharge, Charge and Storage
         try:
             assert np.amax(PV) - sum(solution.CPV) * pow(10, 3) <= 0.1, print("PV",np.amax(PV) - sum(solution.CPV) * pow(10, 3))
-            #assert np.amax(Wind) <= sum(solution.CWind) * pow(10, 3), print(np.amax(Wind) - sum(solution.CWind) * pow(10, 3))
+            assert np.amax(Wind) - sum(solution.CWind) * pow(10, 3) <= 0.1, print("Wind", np.amax(Wind) - sum(solution.CWind) * pow(10, 3))
             assert np.amax(India) - sum(solution.CInter) * pow(10,3) <= 0.1
 
             assert np.amax(DischargePH) - sum(solution.CPHP) * pow(10, 3) <= 0.1, print("DischargePH",np.amax(DischargePH) - sum(solution.CPHP) * pow(10, 3))
@@ -123,8 +123,6 @@ def GGTA(solution):
     CostHydro = factor['Hydro'] * GHydro # A$b p.a.
     CostPH = factor['PHP'] * CPHP + factor['PHS'] * CPHS + factor['PHES-VOM'] * DischargePH * pow(10, -6) * resolution / years # A$b p.a.
     CostIndia = factor['India'] * GIndia # A$b p.a.
-#    if scenario>=21:
-#        CostPH -= factor['LegPH']
 
     CostT = np.array([factor['CHTH'], factor['THTS'], factor['TSSA'], factor['SAZH'], factor['ZHPE'], factor['PEMO'], factor['IN1CH'], factor['IN2TS'], factor['IN3SA'], factor['IN4PE']])
     CostDC, CostAC, CDC, CAC = [],[],[],[]
@@ -136,9 +134,6 @@ def GGTA(solution):
     
     CostDC = (CostDC * CDC).sum() if len(CDC) > 0 else 0 # A$b p.a.
     CostAC = (CostAC * CAC).sum() if len(CAC) > 0 else 0 # A$b p.a.
-
-#    if scenario>=21:
-#        CostDC -= factor['LegINTC']
 
     CostAC += factor['ACPV'] * CPV + factor['ACWind'] * CWind # A$b p.a.
     
@@ -159,7 +154,6 @@ def GGTA(solution):
     LCOEAC = CostAC / (Exports*pow(10,-3)  + Energy - Loss)
     
     # Calculate the levelised cost of generation
-#    LCOG = (CostPV + CostWind + CostHydro + CostBio) * pow(10, 3) / (GPV + GWind + GHydro + GBio)
     LCOG = (CostPV + CostHydro + CostIndia + CostWind) * pow(10, 3) / (GPV + GHydro + GIndia + GWind)
     LCOGP = CostPV * pow(10, 3) / GPV if GPV!=0 else 0
     LCOGW = CostWind * pow(10, 3) / GWind if GWind!=0 else 0
@@ -297,24 +291,19 @@ def Information(x, flexible):
     except AssertionError:
         pass
     
-    #assert np.reshape(baseload.sum(axis=1) + S.DischargePond, (-1, 8760)).sum(axis=-1).max() <= Hydromax, "Hydro generation exceeds requirement"
-
-    #S.TDC = Transmission(S, output=True) if 'APG' in node else np.zeros((intervals, len(TLoss))) # TDC(t, k), MW
     S.TDC = Transmission(S, output=True)
     S.CDC = np.amax(abs(S.TDC), axis=0) * pow(10, -3) # CDC(k), MW to GW
     S.CHTH, S.THTS, S.TSSA, S.SAZH, S.ZHPE, S.PEMO, S.IN1CH, S.IN2TS, S.IN3SA, S.IN4PE = map(lambda k: S.TDC[:, k], range(S.TDC.shape[1]))
 
     if 'Super' not in node:
         S.MPV = S.GPV
-    #    S.MWind = S.GWind if S.GWind.shape[1]>0 else np.zeros((intervals, 1))
+        S.MWind = S.GWind if S.GWind.shape[1]>0 else np.zeros((intervals, 1))
         S.MIndia = S.GIndia
         S.MDischargePH = np.tile(S.DischargePH, (nodes, 1)).transpose()
         S.MDeficit = np.tile(S.Deficit, (nodes, 1)).transpose()
         S.MChargePH = np.tile(S.ChargePH, (nodes, 1)).transpose()
         S.MStoragePH = np.tile(S.StoragePH, (nodes, 1)).transpose()
         S.MSpillage = np.tile(S.Spillage, (nodes, 1)).transpose()
-
-    #S.MBaseload = np.clip(S.MHydro, None, CHydro * pow(10, 3)) # GHydro(t, j), GW to MW
 
     S.MPHS = S.CPHS * np.array(S.CPHP) * pow(10, 3) / sum(S.CPHP) # GW to MW
 

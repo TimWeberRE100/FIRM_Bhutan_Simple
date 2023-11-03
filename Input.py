@@ -26,18 +26,8 @@ MLoad = np.genfromtxt('Data/electricity{}.csv'.format(percapita), delimiter=',',
 TSPV = np.genfromtxt('Data/pv.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(PVl))) # TSPV(t, i), MW
 TSWind = np.genfromtxt('Data/wind.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(Windl))) # TSWind(t, i), MW
 
-if 'uni'in scenario:
-    assets = np.genfromtxt('Data/assets_uni100.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
-    constraints = np.genfromtxt('Data/constraints_existing.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
-    if scenario == 'uni200':
-        assets = 2*assets
-    elif scenario == 'uni50':
-        assets = 0.5*assets
-    elif scenario == 'uni0':
-        assets = 0*assets
-else:
-    assets = np.genfromtxt('Data/assets_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
-    constraints = np.genfromtxt('Data/constraints_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+assets = np.genfromtxt('Data/assets_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
+constraints = np.genfromtxt('Data/constraints_{}.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
 
 if scenario == 'existing':
     hydrol = np.array(['CH']*2+['MO']*1+['TH']*1+['TS']*1+['ZH']*1)
@@ -49,29 +39,17 @@ elif scenario == 'all':
     hydrol = np.array(['CH']*6+['MO']*5+['TH']*3+['TS']*2+['ZH']*4+['PE']*1)
     expl = np.array(['IN1']*6+['IN4']*5+['IN1']*3+['IN2']*2+['IN3']*4+['IN4']*1)
 
-""" print(assets)
-print(constraints)
-print(hydrol) """
-
 CHydro_max, CHydro_RoR, CHydro_Pond = [assets[:, x] * pow(10, -3) for x in range(assets.shape[1])] # CHydro(j), MW to GW
 EHydro = constraints[:, 0] # GWh per year
 hydroProfiles = np.genfromtxt('Data/RoR_{}.csv'.format(scenario), delimiter=',', skip_header=1, usecols=range(4,4+len(hydrol)), encoding=None).astype(float)
 
-""" print(CHydro_max)
-print(CHydro_RoR)
-print(CHydro_Pond) """
-
 indiaExportProfiles = hydroProfiles[:,1] # Tala power station is full export to India
-
-#print(indiaExportProfiles)
 
 for i in range(0,len(hydroProfiles[0])):
     hydroProfiles[i,1] = 0
-CHydro_Pond[1] = 0
-#print(hydroProfiles)
+CHydro_Pond[1] = 0 # Exclude Tala power station from pondage calculations
 
 baseload = np.ones((MLoad.shape[0], len(CHydro_RoR)))
-#print(baseload)
 for i in range(0,MLoad.shape[0]):
     for j in range(0,len(CHydro_RoR)):
         baseload[i,j] = min(hydroProfiles[i,j],CHydro_RoR[j]*pow(10,3)) if CHydro_Pond[j] != 0 else hydroProfiles[i,j]
@@ -80,18 +58,6 @@ daily_pondage = np.zeros((MLoad.shape[0], len(CHydro_RoR)))
 for i in range(0,MLoad.shape[0]):
     for j in range(0,len(CHydro_RoR)):
         daily_pondage[i,j] = sum(hydroProfiles[i:i+23,j] - baseload[i:i+23,j]) if i % 24 == 0 else daily_pondage[i-1,j]
-
-
-#print(baseload.shape)
-#print(baseload[0:23,0])
-
-""" if export_flag == 'export':
-    exports = MLoad.sum(axis=1) - baseload # Export excess hydro to India, assume no export of solar PV
-    exports[exports > 0] = 0
-elif export_flag == 'no_export':
-    exports = np.zeros(MLoad.shape[0])
-else:CHydro_max
-    print("Export flag error") """
 
 ###### CONSTRAINTS ######
 # Energy constraints
@@ -102,7 +68,6 @@ Hydromax = EHydro.sum() * pow(10,3) # GWh to MWh per year
 CDC7max, CDC8max, CDC9max, CDC10max = 4 * [externalImports * MLoad.sum() / MLoad.shape[0] / 1000] # 5%: External interconnections: THKD, INSE, PHSB, MW to GW """
 
 ###### TRANSMISSION LOSSES ######
-
 # HVDC backbone scenario
 dc_flags = np.array([True,True,True,True,True,True,True,True,True,True])
     
@@ -149,23 +114,21 @@ if 'Super' == node:
     Nodel, PVl, Interl = [x[np.where(np.in1d(x, coverage)==True)[0]] for x in (Nodel, PVl, Interl)]
 #    Nodel, PVl, Windl, Interl = [x[np.where(np.in1d(x, coverage)==True)[0]] for x in (Nodel, PVl, Windl, Interl)]
  """
+
 ###### DECISION VARIABLE LIST INDEXES ######
 intervals, nodes = MLoad.shape
 years = int(resolution * intervals / 8760)
 pzones = TSPV.shape[1] # Solar PV and wind sites
 wzones = TSWind.shape[1]
-# pidx, widx, phidx, bidx = (pzones, pzones + wzones, pzones + wzones + nodes, pzones + wzones + 2*nodes) # Index of solar PV (sites), wind (sites), pumped hydro power (service areas), and battery power (service areas)
 pidx, widx, phidx = (pzones, pzones + wzones, pzones + wzones + nodes) # Index of solar PV (sites), wind (sites), pumped hydro power (service areas)
 inters = len(Interl) # Number of external interconnections
 iidx = phidx + 1 + inters # Index of external interconnections, noting pumped hydro energy (network) and battery energy (network) decision variables after the index of battery power
 
 ###### NETWORK CONSTRAINTS ######
 energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
-#export_annual = exports.sum() * pow(10,-9) * resolution / years #PWh p.a.
 contingency_ph = list(0.25 * (MLoad).max(axis=0) * pow(10, -3))[:(nodes)] # MW to GW
 
 #manage = 0 # weeks
-#allowance = MLoad.sum(axis=1).max() * 0.05 * manage * 168 * efficiencyPH # MWh
 allowance = min(0.00002*np.reshape(MLoad.sum(axis=1), (-1, 8760)).sum(axis=-1)) # Allowable annual deficit of 0.002%, MWh
 
 ###### DECISION VARIABLE UPPER BOUNDS ######
@@ -211,8 +174,6 @@ class Solution:
         self.coverage = coverage
         self.TLoss = TLoss
 
-        """ self.CBaseload, self.CPeak = (CBaseload, CPeak)
-        self.CHydro = CHydro # GW """
         self.CHydro_RoR = CHydro_RoR
         self.CHydro_Pond = CHydro_Pond
         self.CHydro_max = CHydro_max
