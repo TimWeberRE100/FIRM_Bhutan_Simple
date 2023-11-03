@@ -7,24 +7,24 @@ import numpy as np
 from Optimisation import scenario, node, percapita, export_flag, import_flag
 
 ######### DEBUG ##########
-scenario = 'existing'
+""" scenario = 'existing'
 node = 'Super'
 percapita = 3
 export_flag = True
-import_flag = True
+import_flag = True """
 #########################
 
 ###### NODAL LISTS ######
 Nodel = np.array(['CH', 'TH', 'TS', 'SA', 'ZH', 'PE', 'MO', 'IN1', 'IN2', 'IN3', 'IN4'])
 PVl =   np.array(['CH']*1 + ['TH']*1 + ['TS']*1 + ['SA']*1 + ['ZH']*1 + ['PE']*1 + ['MO']*1)
-#Windl = np.array(['ME']*1 + ['SB']*1 + ['TE']*1 + ['PA']*1 + ['SE']*1 + ['PE']*1 + ['JO']*1 + ['KT']*1 + ['KD']*1 + ['SW']*1)
+Windl = np.array(['TH']*2)
 Interl = np.array(['IN1']*1 + ['IN2']*1 + ['IN3']*1 + ['IN4']*1) if ((node=='Super') & import_flag) else np.array([]) # Add external interconnections if ASEAN Power Grid scenario
 resolution = 1
 
 ###### DATA IMPORTS ######
 MLoad = np.genfromtxt('Data/electricity{}.csv'.format(percapita), delimiter=',', skip_header=1, usecols=range(4, 4+len(Nodel))) # EOLoad(t, j), MW
 TSPV = np.genfromtxt('Data/pv.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(PVl))) # TSPV(t, i), MW
-#TSWind = np.genfromtxt('Data/wind.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(Windl))) # TSWind(t, i), MW
+TSWind = np.genfromtxt('Data/wind.csv', delimiter=',', skip_header=1, usecols=range(4, 4+len(Windl))) # TSWind(t, i), MW
 
 if 'uni'in scenario:
     assets = np.genfromtxt('Data/assets_uni100.csv'.format(scenario), dtype=None, delimiter=',', encoding=None)[1:, 3:].astype(float)
@@ -41,10 +41,13 @@ else:
 
 if scenario == 'existing':
     hydrol = np.array(['CH']*2+['MO']*1+['TH']*1+['TS']*1+['ZH']*1)
+    expl = np.array(['IN1']*2+['IN4']*1+['IN1']*1+['IN2']*1+['IN3']*1)
 elif scenario == 'construction':
     hydrol = np.array(['CH']*3+['MO']*3+['TH']*3+['TS']*1+['ZH']*3)
+    expl = np.array(['IN1']*3+['IN4']*3+['IN1']*3+['IN2']*1+['IN3']*3)
 elif scenario == 'all':
     hydrol = np.array(['CH']*6+['MO']*5+['TH']*3+['TS']*2+['ZH']*4+['PE']*1)
+    expl = np.array(['IN1']*6+['IN4']*5+['IN1']*3+['IN2']*2+['IN3']*4+['IN4']*1)
 
 """ print(assets)
 print(constraints)
@@ -150,9 +153,9 @@ if 'Super' == node:
 intervals, nodes = MLoad.shape
 years = int(resolution * intervals / 8760)
 pzones = TSPV.shape[1] # Solar PV and wind sites
-# wzones = TSWind.shape[1]
+wzones = TSWind.shape[1]
 # pidx, widx, phidx, bidx = (pzones, pzones + wzones, pzones + wzones + nodes, pzones + wzones + 2*nodes) # Index of solar PV (sites), wind (sites), pumped hydro power (service areas), and battery power (service areas)
-pidx, phidx = (pzones, pzones + nodes) # Index of solar PV (sites), wind (sites), pumped hydro power (service areas)
+pidx, widx, phidx = (pzones, pzones + wzones, pzones + wzones + nodes) # Index of solar PV (sites), wind (sites), pumped hydro power (service areas)
 inters = len(Interl) # Number of external interconnections
 iidx = phidx + 1 + inters # Index of external interconnections, noting pumped hydro energy (network) and battery energy (network) decision variables after the index of battery power
 
@@ -167,6 +170,7 @@ allowance = min(0.00002*np.reshape(MLoad.sum(axis=1), (-1, 8760)).sum(axis=-1)) 
 
 ###### DECISION VARIABLE UPPER BOUNDS ######
 pv_ub = [20.] * pzones
+wind_ub = [1.] * wzones
 phes_ub = [20.] * nodes
 phes_s_ub = [200.]
 inters_ub = [20.] * inters if import_flag else []
@@ -184,12 +188,11 @@ class Solution:
         self.daily_pondage = daily_pondage
 
         self.CPV = list(x[: pidx]) # CPV(i), GW
-#        self.CWind = list(x[pidx: widx]) # CWind(i), GW
+        self.CWind = list(x[pidx: widx]) # CWind(i), GW
         self.GPV = TSPV * np.tile(self.CPV, (intervals, 1)) * pow(10, 3) # GPV(i, t), GW to MW
-#        self.GWind = TSWind * np.tile(self.CWind, (intervals, 1)) * pow(10, 3) # GWind(i, t), GW to MW
+        self.GWind = TSWind * np.tile(self.CWind, (intervals, 1)) * pow(10, 3) # GWind(i, t), GW to MW
 
-#        self.CPHP = list(x[widx: phidx]) # CPHP(j), GW
-        self.CPHP = list(x[pidx: phidx]) # CPHP(j), GW
+        self.CPHP = list(x[widx: phidx]) # CPHP(j), GW
         self.CPHS = x[phidx] # S-CPHS(j), GWh
         self.efficiencyPH = efficiencyPH
 
@@ -198,7 +201,8 @@ class Solution:
 
         self.Nodel, self.PVl, self.Hydrol = (Nodel, PVl, hydrol)
         self.Interl = Interl
-#        self.Windl = Windl
+        self.Windl = Windl
+        self.expl = expl
         self.node = node
         self.scenario = scenario
         self.export_flag = export_flag

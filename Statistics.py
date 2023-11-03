@@ -14,8 +14,7 @@ import datetime as dt
 def Debug(solution):
     """Debugging"""
 
-    Load, PV, India = (solution.MLoad.sum(axis=1), solution.GPV.sum(axis=1), solution.MIndia.sum(axis=1))
-#    Wind = solution.GWind.sum(axis=1)
+    Load, PV, India, Wind = (solution.MLoad.sum(axis=1), solution.GPV.sum(axis=1), solution.MIndia.sum(axis=1), solution.GWind.sum(axis=1))
     Baseload = solution.MBaseload.sum(axis=1)
     Pond = solution.MPond.sum(axis=1)
 
@@ -27,10 +26,8 @@ def Debug(solution):
 
     for i in range(intervals):
         # Energy supply-demand balance
-#        assert abs(Load[i] + ChargePH[i] + ChargeB[i] + Spillage[i]
-#                   - PV[i] - Inter[i] - Wind[i] - Baseload[i] - Peak[i] - DischargePH[i] + DischargeB[i] - Deficit[i]) <= 1
         assert abs(Load[i] + ChargePH[i] + Spillage[i] \
-                   - PV[i] - India[i] - Baseload[i] - Pond[i] - DischargePH[i] - Deficit[i]) <= 1
+                   - PV[i] - Wind[i] - India[i] - Baseload[i] - Pond[i] - DischargePH[i] - Deficit[i]) <= 1
 
         # Discharge, Charge and Storage
         if i==0:
@@ -41,7 +38,7 @@ def Debug(solution):
         # Capacity: PV, wind, Discharge, Charge and Storage
         try:
             assert np.amax(PV) - sum(solution.CPV) * pow(10, 3) <= 0.1, print("PV",np.amax(PV) - sum(solution.CPV) * pow(10, 3))
-#            assert np.amax(Wind) <= sum(solution.CWind) * pow(10, 3), print(np.amax(Wind) - sum(solution.CWind) * pow(10, 3))
+            assert np.amax(Wind) <= sum(solution.CWind) * pow(10, 3), print(np.amax(Wind) - sum(solution.CWind) * pow(10, 3))
             assert np.amax(India) - sum(solution.CInter) * pow(10,3) <= 0.1
 
             assert np.amax(DischargePH) - sum(solution.CPHP) * pow(10, 3) <= 0.1, print("DischargePH",np.amax(DischargePH) - sum(solution.CPHP) * pow(10, 3))
@@ -60,7 +57,7 @@ def LPGM(solution):
     Debug(solution)
 
     C = np.stack([(solution.MLoad).sum(axis=1),
-                  solution.MBaseload.sum(axis=1) + indiaExportProfiles, solution.MPond.sum(axis=1), solution.MIndia.sum(axis=1), solution.GPV.sum(axis=1), #solution.GWind.sum(axis=1),
+                  solution.MBaseload.sum(axis=1) + indiaExportProfiles, solution.MPond.sum(axis=1), solution.MIndia.sum(axis=1), solution.GPV.sum(axis=1), solution.GWind.sum(axis=1),
                   solution.DischargePH, solution.Deficit, -1 * (solution.Spillage + indiaExportProfiles), -1 * solution.ChargePH,
                   solution.StoragePH, solution.StoragePond,
                   solution.CHTH, solution.THTS, solution.TSSA, solution.SAZH, solution.ZHPE, solution.PEMO, solution.IN1CH, solution.IN2TS, solution.IN3SA, solution.IN4PE])
@@ -71,7 +68,7 @@ def LPGM(solution):
     C = np.insert(C.astype('str'), 0, datentime, axis=1)
 
     header = 'Date & time,Operational demand,' \
-             'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),PHES-Charge (MW),' \
+             'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),Wind (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),PHES-Charge (MW),' \
              'PHES-Storage (MWh),Pond-Storage (MWh),' \
              'CHTH,THTS,TSSA,SAZH,ZHPE,PEMO,IN1CH,IN2TS,IN3SA,IN4PE'
 
@@ -79,7 +76,7 @@ def LPGM(solution):
 
     if 'Super' in node:
         header = 'Date & time,Operational demand,' \
-                 'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),'\
+                 'RoR Hydropower (MW),Pond Hydropower (MW),India Imports (MW),Solar photovoltaics (MW),Wind (MW),PHES-Discharge (MW),Energy deficit (MW),India Exports (MW),'\
                  'Transmission,PHES-Charge (MW),Pond-Storage (MWh),' \
                  'PHES-Storage'
 
@@ -110,21 +107,19 @@ def GGTA(solution):
     factor = dict(factor)
 
     # Import capacities [GW, GWh] from the least-cost solution
-    CPV, CInter, CPHP, CPHS = (sum(solution.CPV), sum(solution.CInter), sum(solution.CPHP), solution.CPHS) # GW, GWh
-#    CWind = sum(solution.CWind)
+    CPV, CInter, CPHP, CPHS, CWind = (sum(solution.CPV), sum(solution.CInter), sum(solution.CPHP), solution.CPHS, sum(solution.CWind)) # GW, GWh
     CapHydro = CHydro_max.sum() # GW
 
     # Import generation energy [GWh] from the least-cost solution
     Ghydro_CH2 = indiaExportProfiles.sum() 
-    GPV, GHydro, GIndia = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.MBaseload.sum() + solution.MPond.sum() + Ghydro_CH2, solution.MIndia.sum())) # TWh p.a.
+    GPV, GWind, GHydro, GIndia = map(lambda x: x * pow(10, -6) * resolution / years, (solution.GPV.sum(), solution.GWind.sum(), solution.MBaseload.sum() + solution.MPond.sum() + Ghydro_CH2, solution.MIndia.sum())) # TWh p.a.
     DischargePH = solution.DischargePH.sum()
-#    GWind = solution.GWind.sum()
     CFPV = GPV / CPV / 8.76 if CPV != 0 else 0
-#    CFWind = GWind / CWind / 8.76
+    CFWind = GWind / CWind / 8.76
     
     # Calculate the annual costs for each technology
     CostPV = factor['PV'] * CPV # A$b p.a.
-#    CostWind = factor['Wind'] * CWind # A$b p.a.
+    CostWind = factor['Wind'] * CWind # A$b p.a.
     CostHydro = factor['Hydro'] * GHydro # A$b p.a.
     CostPH = factor['PHP'] * CPHP + factor['PHS'] * CPHS + factor['PHES-VOM'] * DischargePH * pow(10, -6) * resolution / years # A$b p.a.
     CostIndia = factor['India'] * GIndia # A$b p.a.
@@ -145,7 +140,7 @@ def GGTA(solution):
 #    if scenario>=21:
 #        CostDC -= factor['LegINTC']
 
-    CostAC += factor['ACPV'] * CPV # + factor['ACWind'] * CWind # A$b p.a.
+    CostAC += factor['ACPV'] * CPV + factor['ACWind'] * CWind # A$b p.a.
     
     # Calculate the average annual energy demand
     Energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
@@ -154,9 +149,9 @@ def GGTA(solution):
     Loss = Loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
 
     # Calculate the levelised cost of elcetricity at a network level
-    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC) / (Exports*pow(10,-3) + Energy - Loss) # + CostWind / (Energy - Loss)
-    LCOEPV = CostPV / (Exports*pow(10,-3)  + Energy - Loss)
-#    LCOEWind = CostWind / (Energy - Loss)
+    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Exports*pow(10,-3) + Energy - Loss) # + CostWind / (Energy - Loss)
+    LCOEPV = CostPV / (Exports*pow(10,-3) + Energy - Loss)
+    LCOEWind = CostWind / (Exports*pow(10,-3) + Energy - Loss)
     LCOEIndia = CostIndia / (Exports*pow(10,-3)  + Energy - Loss)
     LCOEHydro = CostHydro / (Exports*pow(10,-3)  + Energy - Loss)
     LCOEPH = CostPH / (Exports*pow(10,-3)  + Energy - Loss)
@@ -165,9 +160,9 @@ def GGTA(solution):
     
     # Calculate the levelised cost of generation
 #    LCOG = (CostPV + CostWind + CostHydro + CostBio) * pow(10, 3) / (GPV + GWind + GHydro + GBio)
-    LCOG = (CostPV + CostHydro + CostIndia) * pow(10, 3) / (GPV + GHydro + GIndia)
+    LCOG = (CostPV + CostHydro + CostIndia + CostWind) * pow(10, 3) / (GPV + GHydro + GIndia + GWind)
     LCOGP = CostPV * pow(10, 3) / GPV if GPV!=0 else 0
-#    LCOGW = CostWind * pow(10, 3) / GWind if GWind!=0 else 0
+    LCOGW = CostWind * pow(10, 3) / GWind if GWind!=0 else 0
     LCOGH = CostHydro * pow(10, 3) / (GHydro) if (GHydro)!=0 else 0
     LCOGI = CostIndia * pow(10, 3) / GIndia if GIndia != 0 else 0
 
@@ -182,7 +177,7 @@ def GGTA(solution):
     print('\u2022 LCOG:', LCOG)
     print('\u2022 LCOB:', LCOB)
     print('\u2022 LCOG-PV:', LCOGP, '(%s)' % CFPV)
-#    print('\u2022 LCOG-Wind:', LCOGW, '(%s)' % CFWind)
+    print('\u2022 LCOG-Wind:', LCOGW, '(%s)' % CFWind)
     print('\u2022 LCOG-Hydro:', LCOGH)
     print('\u2022 LCOG-External_Imports:', LCOGI)
     print('\u2022 LCOB-PHES_Storage:', LCOBS_P)
@@ -190,16 +185,99 @@ def GGTA(solution):
     print('\u2022 LCOB-Spillage & loss:', LCOBL)
 
     size = 20 + len(list(solution.CDC))
-    D = np.zeros((1, size))
-    header = 'Annual demand (PWh),Annual Energy Losses (PWh),' \
-             'PV Capacity (GW),PV Avg Annual Gen (GWh),Hydro Capacity (GW),Hydro Avg Annual Gen (GWh),Inter Capacity (GW),India Avg Annual Imports (GWh),India Avg Annual Exports (GWh),' \
+    D = np.zeros((3, size))
+    header = 'Boundary,Annual demand (PWh),Annual Energy Losses (PWh),' \
+             'PV Capacity (GW),PV Avg Annual Gen (GWh),Wind Capacity (GW),Wind Avg Annual Gen (GWh),Hydro Capacity (GW),Hydro Avg Annual Gen (GWh),Inter Capacity (GW),India Avg Annual Imports (GWh),India Avg Annual Exports (GWh),' \
              'PHES-PowerCap (GW),PHES-EnergyCap (GWh),' \
              'CHTH,THTS,TSSA,SAZH,ZHPE,PEMO,IN1CH,IN2TS,IN3SA,IN4PE,' \
-             'LCOE,LCOG,LCOB,LCOG_PV, LCOG_Hydro,LCOG_IndiaImports,LCOBS_PHES,LCOBT,LCOB_LossesExports'
-    D[0, :] = [Energy * pow(10, 3), Loss * pow(10, 3), CPV, GPV, CapHydro, GHydro, CInter, GIndia,Exports] \
+             'LCOE,LCOG,LCOB,LCOG_PV,LCOG_Wind,LCOG_Hydro,LCOG_IndiaImports,LCOBS_PHES,LCOBT,LCOB_LossesExports'
+    
+    ### ALL IN COSTS
+    D[0, :] = ["Domestic and Exports",Energy * pow(10, 3) + Exports, Loss * pow(10, 3), CPV, GPV, CWind, GWind, CapHydro, GHydro, CInter, GIndia, Exports] \
               + [CPHP, CPHS] \
               + list(solution.CDC) \
-              + [LCOE, LCOG, LCOB, LCOGP, LCOGH, LCOGI, LCOBS_P, LCOBT, LCOBL] # + [CWind, GWind, LCOGW]
+              + [LCOE, LCOG, LCOB, LCOGP, LCOGW, LCOGH, LCOGI, LCOBS_P, LCOBT, LCOBL] 
+    
+    ### DOMESTIC COSTS ONLY
+    PondExports = solution.MSpillage.sum(axis=1) - (solution.MChargePH.sum(axis=1) + MLoad.sum(axis=1) - solution.MPV.sum(axis=1) - solution.MWind.sum(axis=1) - solution.MIndia.sum(axis=1) - solution.MBaseload.sum(axis=1) - solution.MDischargePH.sum(axis=1) - solution.MDeficit.sum(axis=1))
+    PondExports[PondExports < 0] = 0
+    GPondExports = PondExports * pow(10,-6) * resolution / years
+    SolarExports = solution.MSpillage.sum(axis=1) - (solution.MChargePH.sum(axis=1) + MLoad.sum(axis=1) - solution.MWind.sum(axis=1) - solution.MIndia.sum(axis=1) - solution.MBaseload.sum(axis=1) - solution.MDischargePH.sum(axis=1) - solution.MDeficit.sum(axis=1))
+    SolarExports[SolarExports < 0] = 0
+    GSolarExports = SolarExports * pow(10,-6) * resolution / years
+    WindExports = solution.MSpillage.sum(axis=1) - (solution.MChargePH.sum(axis=1) + MLoad.sum(axis=1) - solution.MIndia.sum(axis=1) - solution.MBaseload.sum(axis=1) - solution.MDischargePH.sum(axis=1) - solution.MDeficit.sum(axis=1))
+    WindExports[WindExports < 0] = 0
+    GWindExports = WindExports * pow(10,-6) * resolution / years
+
+    CostHydro = factor['Hydro'] * (GHydro - Ghydro_CH2 - GPondExports)
+
+    TDC_domestic = Transmission(solution, domestic_only=True)
+    CDC_domestic = np.amax(abs(TDC_domestic), axis=0) * pow(10, -3)
+    Loss_domestic = np.sum(abs(TDC_domestic), axis=0) * TLoss
+    Loss_domestic = Loss_domestic.sum() * pow(10, -9) * resolution / years # PWh p.a.
+    CostDC_domestic, CostAC_domestic, CDC_domestic, CAC_domestic = [],[],[],[]
+
+    for i in range(0,len(CostT)):
+        CostDC_domestic.append(CostT[i]) if dc_flags[i] else CostAC_domestic.append(CostT[i])
+        CDC_domestic.append(CDC_domestic[i]) if dc_flags[i] else CAC_domestic.append(CDC_domestic[i])
+    CostDC_domestic, CostAC_domestic, CDC_domestic, CAC_domestic = [np.array(x) for x in [CostDC_domestic, CostAC_domestic, CDC_domestic, CAC_domestic]]
+    
+    CostDC_domestic = (CostDC_domestic * CDC_domestic).sum() if len(CDC_domestic) > 0 else 0 # A$b p.a.
+    CostAC_domestic = (CostAC_domestic * CAC_domestic).sum() if len(CAC_domestic) > 0 else 0 # A$b p.a.
+    CostAC_domestic += factor['ACPV'] * CPV  + factor['ACWind'] * CWind # A$b p.a.
+
+    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Energy - Loss_domestic)
+
+    LCOG = (CostPV + CostHydro + CostIndia + CostWind) * pow(10, 3) / (GPV + GHydro + GIndia + GWind - Exports)
+    LCOGP = CostPV * pow(10, 3) / (GPV - GSolarExports) if (GPV - GSolarExports)!=0 else 0
+    LCOGW = CostWind * pow(10, 3) / (GWind - GWindExports) if (GWind - GWindExports)!=0 else 0
+    LCOGH = CostHydro * pow(10, 3) / (GHydro - Ghydro_CH2 - GPondExports) if (GHydro - Ghydro_CH2 - GPondExports)!=0 else 0
+    LCOGI = CostIndia * pow(10, 3) / GIndia if GIndia != 0 else 0
+
+    LCOB = LCOE - LCOG
+    LCOBS_P = CostPH / (Energy - Loss_domestic)
+    LCOBT = (CostDC_domestic + CostAC_domestic) / (Energy - Loss_domestic)
+    LCOBL = LCOB - LCOBS_P - LCOBT
+
+    D[0, :] = ["Domestic only",Energy * pow(10, 3), Loss_domestic * pow(10, 3), CPV, GPV - GSolarExports, CWind, GWind - GWindExports, CapHydro, GHydro - Ghydro_CH2 - GPondExports, CInter, GIndia, 0] \
+              + [CPHP, CPHS] \
+              + list(CDC_domestic) \
+              + [LCOE, LCOG, LCOB, LCOGP, LCOGW, LCOGH, LCOGI, LCOBS_P, LCOBT, LCOBL]
+    
+    ### EXPORT COSTS ONLY
+    CostHydro = factor['Hydro'] * (Ghydro_CH2 + GPondExports)
+
+    TDC_export = Transmission(solution, export_only=True)
+    CDC_export= np.amax(abs(TDC_export), axis=0) * pow(10, -3)
+    Loss_export = np.sum(abs(TDC_export), axis=0) * TLoss
+    Loss_export = Loss_export.sum() * pow(10, -9) * resolution / years # PWh p.a.
+    CostDC_export, CostAC_export, CDC_export, CAC_export = [],[],[],[]
+
+    for i in range(0,len(CostT)):
+        CostDC_export.append(CostT[i]) if dc_flags[i] else CostAC_export.append(CostT[i])
+        CDC_export.append(CDC_export[i]) if dc_flags[i] else CAC_export.append(CDC_export[i])
+    CostDC_export, CostAC_export, CDC_export, CAC_export = [np.array(x) for x in [CostDC_export, CostAC_export, CDC_export, CAC_export]]
+    
+    CostDC_export = (CostDC_export * CDC_export).sum() if len(CDC_export) > 0 else 0 # A$b p.a.
+    CostAC_export = (CostAC_export * CAC_export).sum() if len(CAC_export) > 0 else 0 # A$b p.a.
+    
+    LCOE = (CostHydro + CostDC + CostAC) / (Exports*pow(10,-3) - Loss_export)
+
+    LCOG = (CostHydro) * pow(10, 3) / (Exports)
+    LCOGP = 0
+    LCOGW = 0
+    LCOGH = CostHydro * pow(10, 3) / (Ghydro_CH2 + GPondExports) if (Ghydro_CH2 + GPondExports)!=0 else 0
+    LCOGI = 0
+
+    LCOB = LCOE - LCOG
+    LCOBS_P = 0
+    LCOBT = (CostDC_export + CostAC_export) / (Exports*pow(10,-3) - Loss_export)
+    LCOBL = LCOB - LCOBS_P - LCOBT
+
+    D[0, :] = ["Exports only",Exports, Loss_export * pow(10, 3), 0, GSolarExports, 0, GWindExports, CHydro_max[1], Ghydro_CH2 + GPondExports, 0, 0, Exports] \
+              + [0, 0] \
+              + list(CDC_export) \
+              + [LCOE, LCOG, LCOB, LCOGP, LCOGW, LCOGH, LCOGI, LCOBS_P, LCOBT, LCOBL]
 
     np.savetxt('Results/GGTA_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), D, fmt='%f', delimiter=',',header=header)
     print('Energy generation, storage and transmission information is produced.')
@@ -266,5 +344,5 @@ def Information(x, flexible):
 if __name__ == '__main__':
     suffix="_Super_existing_20_True.csv"
     Optimisation_x = np.genfromtxt('Results/Optimisation_resultx{}'.format(suffix), delimiter=',')
-    flexible = np.genfromtxt('Results/Dispatch_Flexible{}'.format(suffix), delimiter=',', skip_header=1)
+    flexible = np.genfromtxt('Results/Dispatch_IndiaImports{}'.format(suffix), delimiter=',', skip_header=1)
     Information(Optimisation_x, flexible)

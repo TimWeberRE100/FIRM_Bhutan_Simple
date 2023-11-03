@@ -9,13 +9,13 @@ import datetime as dt
 import csv
 
 parser = ArgumentParser()
-parser.add_argument('-i', default=500, type=int, required=False, help='maxiter=4000, 400')
-parser.add_argument('-p', default=5, type=int, required=False, help='popsize=2, 10')
+parser.add_argument('-i', default=400, type=int, required=False, help='maxiter=4000, 400')
+parser.add_argument('-p', default=2, type=int, required=False, help='popsize=2, 10')
 parser.add_argument('-m', default=0.5, type=float, required=False, help='mutation=0.5')
 parser.add_argument('-r', default=0.3, type=float, required=False, help='recombination=0.3')
-parser.add_argument('-e', default=3, type=int, required=False, help='per-capita electricity = 3, 6, 20 MWh/year; prefix 2 for flat curves; 3100, 3200 for universal flat')
+parser.add_argument('-e', default=20, type=int, required=False, help='per-capita electricity = 3, 6, 10, 15, 20 MWh/year')
 parser.add_argument('-n', default='Super', type=str, required=False, help='Super, CH, TH...')
-parser.add_argument('-s', default='existing', type=str, required=False, help='all, construction, existing, uni200, uni100, uni50, uni0')
+parser.add_argument('-s', default='existing', type=str, required=False, help='all, construction, existing')
 parser.add_argument('-z', default='export', type=str, required=False, help='export, no_export')
 parser.add_argument('-y', default='import', type=str, required=False, help='import, no_import')
 args = parser.parse_args()
@@ -37,7 +37,6 @@ def F(x):
     S = Solution(x)
 
     CIndia = np.nan_to_num(np.array(S.CInter))
-    #print("India: ", CIndia," GW")
 
     # Simulation with only baseload
     Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
@@ -82,17 +81,12 @@ def F(x):
     Ghydro_CH2 = indiaExportProfiles.sum() * resolution / years
 
     # Levelised cost of electricity calculation
-    cost = factor * np.array([sum(S.CPV), 0, GIndia * pow(10,-6), sum(S.CPHP), S.CPHS, GPHES] + list(CDC) + [sum(S.CPV), 0, (GHydro + Ghydro_CH2) * pow(10, -6), 0, 0]) # $b p.a.
+    cost = factor * np.array([sum(S.CPV), sum(S.CWind), GIndia * pow(10,-6), sum(S.CPHP), S.CPHS, GPHES] + list(CDC) + [sum(S.CPV), sum(S.CWind), (GHydro + Ghydro_CH2) * pow(10, -6), 0, 0]) # $b p.a.
     cost = cost.sum()
     loss = np.sum(abs(TDC), axis=0) * TLoss
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
     LCOE = cost / abs(export_annual + energy - loss) 
 
-    #print("Costs: ",energy, loss, cost, LCOE)
-    
-    ########### INCLUSION OF EXPORT ENERGY IN LCOE CALCULATION?###############
-    ### IF NO - REMOVE GHYDRO_CH2 FROM COSTS CALCULATION, REMOVE SPILLAGE FROM ENERGY CALCULATION
-    
     with open('Results/record_{}_{}_{}_{}.csv'.format(node,scenario,percapita, export_flag), 'a', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,PenDeficit,PenEnergy,PenPower,LCOE]))
@@ -105,17 +99,12 @@ if __name__=='__main__':
     starttime = dt.datetime.now()
     print("Optimisation starts at", starttime)
 
-#    lb = [0.]       * pzones + [0.]     * wzones + contingency_ph   + contingency_b     + [0.]      + [0.]     + [0.]    * inters + [0.] * nodes
-#    ub = [10000.]   * pzones + [300]    * wzones + [10000.] * nodes + [10000.] * nodes  + [100000.] + [100000] + [1000.] * inters + [50.] * nodes
-
-    lb = [0.] * pzones + [0.] * nodes + [0.] + [0.] * inters
-    ub = pv_ub + phes_ub + phes_s_ub + inters_ub
-
-    # start = np.genfromtxt('Results/init.csv', delimiter=',')
+    lb = [0.] * pzones + [0.] * wzones + [0.] * nodes + [0.] + [0.] * inters
+    ub = pv_ub + wind_ub + phes_ub + phes_s_ub + inters_ub
 
     result = differential_evolution(func=F, bounds=list(zip(lb, ub)), tol=0, # init=start,
                                     maxiter=args.i, popsize=args.p, mutation=args.m, recombination=args.r,
-                                    disp=True, polish=False, updating='deferred', workers=-1) ###### CHANGE WORKERS BACK TO -1
+                                    disp=True, polish=False, updating='deferred', workers=8) ###### CHANGE WORKERS BACK TO -1
 
     with open('Results/Optimisation_resultx_{}_{}_{}_{}.csv'.format(node,scenario,percapita,export_flag), 'w', newline="") as csvfile:
         writer = csv.writer(csvfile)

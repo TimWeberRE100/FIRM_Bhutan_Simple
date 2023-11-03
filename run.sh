@@ -1,17 +1,26 @@
 #!/bin/sh
-python3 Optimisation.py -e 3100 -s uni200 -z no_export
-python3 Optimisation.py -e 3100 -s uni100 -z no_export
-python3 Optimisation.py -e 3100 -s uni50 -z no_export
-python3 Optimisation.py -e 3100 -s uni0 -z no_export
-python3 Optimisation.py -e 3200 -s uni200 -z no_export
-python3 Optimisation.py -e 3200 -s uni100 -z no_export
-python3 Optimisation.py -e 3200 -s uni50 -z no_export
-python3 Optimisation.py -e 3200 -s uni0 -z no_export
-python3 Optimisation.py -e 3100 -s uni200 -z export
-python3 Optimisation.py -e 3100 -s uni100 -z export
-python3 Optimisation.py -e 3100 -s uni50 -z export
-python3 Optimisation.py -e 3100 -s uni0 -z export
-python3 Optimisation.py -e 3200 -s uni200 -z export
-python3 Optimisation.py -e 3200 -s uni100 -z export
-python3 Optimisation.py -e 3200 -s uni50 -z export
-python3 Optimisation.py -e 3200 -s uni0 -z export
+python3 Optimisation.py -e 3 -s existing -y import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s existing -y import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s existing -y import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s existing -y import -p 10 -i 1000
+python3 Optimisation.py -e 3 -s construction -y import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s construction -y import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s construction -y import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s construction -y import -p 10 -i 1000
+python3 Optimisation.py -e 3 -s all -y import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s all -y import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s all -y import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s all -y import -p 10 -i 1000
+
+python3 Optimisation.py -e 3 -s existing -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s existing -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s existing -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s existing -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 3 -s construction -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s construction -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s construction -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s construction -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 3 -s all -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 6 -s all -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 10 -s all -y no_import -p 10 -i 1000
+python3 Optimisation.py -e 15 -s all -y no_import -p 10 -i 1000

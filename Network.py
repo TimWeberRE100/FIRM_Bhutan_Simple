@@ -5,28 +5,25 @@
 
 import numpy as np
 
-def Transmission(solution, output=False):
+def Transmission(solution, domestic_only=False, export_only=False, output=False):
     """TDC = Network.Transmission(S)"""
 
-    Nodel, PVl, Interl, Hydrol = (solution.Nodel, solution.PVl, solution.Interl, solution.Hydrol)
-#    Windl = solution.Windl
+    Nodel, PVl, Interl, Hydrol, Windl, expl = (solution.Nodel, solution.PVl, solution.Interl, solution.Hydrol, solution.Windl, solution.expl)
     intervals, nodes, inters = (solution.intervals, solution.nodes, len(Interl))
     
     CHydro_Pond = solution.CHydro_Pond
     pondfactor = np.tile(CHydro_Pond, (intervals, 1)) / sum(CHydro_Pond) if sum(CHydro_Pond) != 0 else 0
     MPond_long = np.tile(solution.DischargePond, (len(CHydro_Pond), 1)).transpose() * pondfactor 
 
-    MPV, MBaseload, MPond = map(np.zeros, [(nodes, intervals)] * 3)
-#    MWind = map(np.zeros, [(nodes, intervals)] * 1)
+    MPV, MBaseload, MPond, MWind = map(np.zeros, [(nodes, intervals)] * 4)
     for i, j in enumerate(Nodel):
         MPV[i, :] = solution.GPV[:, np.where(PVl==j)[0]].sum(axis=1)
-#        MWind[i, :] = solution.GWind[:, np.where(Windl==j)[0]].sum(axis=1)
+        MWind[i, :] = solution.GWind[:, np.where(Windl==j)[0]].sum(axis=1)
         MBaseload[i, :] = solution.baseload[:, np.where(Hydrol==j)[0]].sum(axis=1)
         MPond[i, :] = MPond_long[:, np.where(Hydrol==j)[0]].sum(axis=1)
         """ if solution.node=='Super':
             MInter[i, :] = solution.GInter[:, np.where(Interl==j)[0]].sum(axis=1) """
-    MPV, MBaseload, MPond = (MPV.transpose(), MBaseload.transpose(), MPond.transpose()) # Sij-GPV(t, i), Sij-GWind(t, i), MW
-#    MWind = MWind.transpose()
+    MPV, MBaseload, MPond, MWind = (MPV.transpose(), MBaseload.transpose(), MPond.transpose(), MWind.transpose()) # Sij-GPV(t, i), Sij-GWind(t, i), MW
     
     MLoad = solution.MLoad # EOLoad(t, j), MW
 
@@ -34,14 +31,22 @@ def Transmission(solution, output=False):
     MDeficit = np.tile(solution.Deficit, (nodes, 1)).transpose() * defactor # MDeficit: EDE(j, t)
 
     CIndia = np.append(np.array([0]*(nodes-len(solution.Interl))), np.nan_to_num(np.array(solution.CInter))) # GW
+
     if solution.export_flag:
-        expfactor = np.tile(CIndia, (intervals, 1)) / sum(CIndia) if sum(CIndia) != 0 else 0
-        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
+        """ print(expl)
+        print(solution.CHydro_max[expl=="IN1"].sum()) """
+        CHydro_nodes = np.zeros(nodes)
+        for j in range(0,len(Nodel)):
+            CHydro_nodes[j] = solution.CHydro_max[expl==Nodel[j]].sum()
+        expfactor = np.tile(CHydro_nodes, (intervals, 1)) / sum(CHydro_nodes) if sum(CHydro_nodes) != 0 else 0
+        MSpillage_exp = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
+        MSpillage = np.zeros((nodes, intervals)).transpose()
     else:
         M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
-        MPW = MPV + M_minFactors # + MWind
+        MPW = MPV + M_minFactors + MWind + MPond
         spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
         MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
+        MSpillage_exp = np.zeros((nodes, intervals)).transpose()
 
     CPHP = solution.CPHP
     pcfactor = np.tile(CPHP, (intervals, 1)) / sum(CPHP) if sum(CPHP) != 0 else 0
@@ -53,16 +58,26 @@ def Transmission(solution, output=False):
         ifactor = np.tile(CIndia, (intervals, 1))
     else:
         ifactor = np.tile(CIndia, (intervals, 1)) / CIndia.sum()
+    """ print(india_imports.shape)
+    print(ifactor.shape)
+    print(CIndia.shape) """
     MIndia = np.tile(india_imports, (nodes, 1)).transpose() * ifactor
 
-    """ exportNodes = np.array([0,0,0,0,0,0,0,CHydro[0]+CHydro[1], CHydro[2], CHydro[3]+CHydro[4], CHydro[5]+CHydro[6]]) # Electricity exported to each node proportional to the capacity of hydro nearest that interconnection
-    efactor = np.tile(exportNodes, (intervals,1)) / sum(exportNodes) if sum(exportNodes) != 0 else 0
-    MExport = np.tile(solution.exports, (nodes, 1)).transpose() * efactor """
+    efactor = np.array([0,0,0,0,0,0,0,1,0,0,0])
+    ch2factor = np.array([0,1,0,0,0,0,0,0,0,0,0])
+    MExport = np.tile(solution.indiaExportProfiles, (nodes, 1)).transpose() * efactor
+    MHydro_CH2 = np.tile(solution.indiaExportProfiles, (nodes, 1)).transpose() * ch2factor
 
     #print(MLoad.shape,MChargePH.shape,MSpillage.shape,MPV.shape,MIndia.shape,MBaseload.shape,MPond.shape,MDischargePH.shape,MDeficit.shape)
 
-    MImport = MLoad + MChargePH + MSpillage \
-              - MPV - MIndia - MBaseload - MPond - MDischargePH - MDeficit # - MWind; EIM(t, j), MW
+    if domestic_only:
+        MImport = MLoad + MChargePH + MSpillage \
+              - MPV - MWind - MIndia - MBaseload - MPond - MDischargePH - MDeficit # EIM(t, j), MW
+    if export_only:
+        MImport = MSpillage_exp + MExport - MHydro_CH2
+    else:
+        MImport = MLoad + MChargePH + MSpillage_exp + MSpillage + MExport \
+              - MPV - MWind - MIndia - MBaseload - MPond - MDischargePH - MDeficit - MHydro_CH2 # EIM(t, j), MW
     
     coverage = solution.coverage
     if len(coverage) > 1:
@@ -95,9 +110,8 @@ def Transmission(solution, output=False):
 
     if output:
         MStoragePH = np.tile(solution.StoragePH, (nodes, 1)).transpose() * pcfactor # SPH(t, j), MWh
-        solution.MPV, solution.MIndia, solution.MBaseload, solution.MPond = (MPV, MIndia, MBaseload, MPond)
-#        solution.MWind = MWind        
+        solution.MPV, solution.MIndia, solution.MBaseload, solution.MPond, solution.MWind = (MPV, MIndia, MBaseload, MPond, MWind)
         solution.MDischargePH, solution.MChargePH, solution.MStoragePH = (MDischargePH, MChargePH, MStoragePH)
-        solution.MDeficit, solution.MSpillage = (MDeficit, MSpillage)
+        solution.MDeficit, solution.MSpillage, solution.MSpillage_exp, solution.MExport = (MDeficit, MSpillage, MSpillage_exp, MExport)
 
     return TDC
