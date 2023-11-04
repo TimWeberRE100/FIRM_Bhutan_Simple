@@ -7,6 +7,7 @@ from scipy.optimize import differential_evolution
 from argparse import ArgumentParser
 import datetime as dt
 import csv
+import os
 
 parser = ArgumentParser()
 parser.add_argument('-i', default=400, type=int, required=False, help='maxiter=4000, 400')
@@ -87,9 +88,15 @@ def F(x):
     loss = loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
     LCOE = cost / abs(export_annual + energy - loss) 
 
-    with open('Results/record_{}_{}_{}_{}.csv'.format(node,scenario,percapita, export_flag), 'a', newline="") as csvfile:
+    if not os.path.exists('Results'):
+        os.makedirs('Results')
+
+    csv_file_path = 'Results/record_{}_{}_{}_{}.csv'.format(node, scenario, percapita, export_flag)
+
+    with open('Results/record_{}_{}_{}_{}.csv'.format(node, scenario, percapita, export_flag), 'w', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,PenDeficit,PenEnergy,PenPower,LCOE]))
+
 
     Func = LCOE + PenDeficit + PenEnergy + PenPower + PenDC
     
