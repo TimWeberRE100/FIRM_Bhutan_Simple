@@ -139,12 +139,12 @@ def GGTA(solution):
     
     # Calculate the average annual energy demand
     Energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
-    Exports = (indiaExportProfiles.sum() + solution.MSpillage.sum()) * pow(10,-6) * resolution / years
+    Exports = (indiaExportProfiles.sum() + solution.MSpillage.sum() + solution.MSpillage_exp.sum()) * pow(10,-6) * resolution / years
     Loss = np.sum(abs(solution.TDC), axis=0) * TLoss
     Loss = Loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
 
     # Calculate the levelised cost of elcetricity at a network level
-    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Exports*pow(10,-3) + Energy - Loss) # + CostWind / (Energy - Loss)
+    LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Exports*pow(10,-3) + Energy - Loss)
     LCOEPV = CostPV / (Exports*pow(10,-3) + Energy - Loss)
     LCOEWind = CostWind / (Exports*pow(10,-3) + Energy - Loss)
     LCOEIndia = CostIndia / (Exports*pow(10,-3)  + Energy - Loss)
@@ -219,10 +219,8 @@ def GGTA(solution):
 
     LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Energy - Loss_domestic)
 
-    LCOG = (CostPV + CostHydro + CostIndia + CostWind) * pow(10, 3) / (GPV + GHydro + GIndia + GWind - Exports)
-    LCOGP = CostPV * pow(10, 3) / (GPV - GSolarExports) if (GPV - GSolarExports)!=0 else 0
-    LCOGW = CostWind * pow(10, 3) / (GWind - GWindExports) if (GWind - GWindExports)!=0 else 0
-    LCOGH = CostHydro * pow(10, 3) / (GHydro - Ghydro_CH2 - GPondExports) if (GHydro - Ghydro_CH2 - GPondExports)!=0 else 0
+    LCOG = (CostPV + CostHydro + CostIndia + CostWind) * pow(10, 3) / (GPV + GHydro + GIndia + GWind - Ghydro_CH2 - GPondExports - GBaseloadExports)
+    LCOGH = CostHydro * pow(10, 3) / (GHydro - Ghydro_CH2 - GBaseloadExports - GPondExports) if (GHydro - Ghydro_CH2 - GBaseloadExports - GPondExports)!=0 else 0
     LCOGI = CostIndia * pow(10, 3) / GIndia if GIndia != 0 else 0
 
     LCOB = LCOE - LCOG
@@ -256,8 +254,6 @@ def GGTA(solution):
     LCOE = (CostHydro + CostDC + CostAC) / (Exports*pow(10,-3) - Loss_export)
 
     LCOG = (CostHydro) * pow(10, 3) / (Exports)
-    LCOGP = 0
-    LCOGW = 0
     LCOGH = CostHydro * pow(10, 3) / (Ghydro_CH2 + GPondExports + GBaseloadExports) if (Ghydro_CH2 + GPondExports + GBaseloadExports)!=0 else 0
     LCOGI = 0
 
@@ -329,7 +325,7 @@ def Information(x, flexible):
     return True
 
 if __name__ == '__main__':
-    suffix="_Super_existing_20_True.csv"
+    suffix="_Super_existing_6_True.csv"
     Optimisation_x = np.genfromtxt('Results/Optimisation_resultx{}'.format(suffix), delimiter=',')
     flexible = np.genfromtxt('Results/Dispatch_IndiaImports{}'.format(suffix), delimiter=',', skip_header=1)
     Information(Optimisation_x, flexible)
