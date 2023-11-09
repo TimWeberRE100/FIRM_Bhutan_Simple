@@ -138,10 +138,10 @@ def GGTA(solution):
     CostAC += factor['ACPV'] * CPV + factor['ACWind'] * CWind # A$b p.a.
     
     # Calculate the average annual energy demand
-    Energy = (MLoad).sum() * pow(10, -9) * resolution / years # PWh p.a.
+    Energy = (MLoad).sum() * pow(10, -9) * resolution / years # TWh p.a.
     Exports = (indiaExportProfiles.sum() + solution.MSpillage.sum() + solution.MSpillage_exp.sum()) * pow(10,-6) * resolution / years
     Loss = np.sum(abs(solution.TDC), axis=0) * TLoss
-    Loss = Loss.sum() * pow(10, -9) * resolution / years # PWh p.a.
+    Loss = Loss.sum() * pow(10, -9) * resolution / years # TWh p.a.
 
     # Calculate the levelised cost of elcetricity at a network level
     LCOE = (CostPV + CostIndia + CostHydro + CostPH + CostDC + CostAC + CostWind) / (Exports*pow(10,-3) + Energy - Loss)
@@ -180,7 +180,7 @@ def GGTA(solution):
 
     size = 24 + len(list(solution.CDC))
     D = np.zeros((3, size))
-    header = 'Boundary,Annual demand (PWh),Annual Energy Losses (PWh),' \
+    header = 'Boundary,Annual demand (TWh),Annual Energy Losses (TWh),' \
              'PV Capacity (GW),PV Avg Annual Gen (GWh),Wind Capacity (GW),Wind Avg Annual Gen (GWh),Hydro Capacity (GW),Hydro Avg Annual Gen (GWh),Inter Capacity (GW),India Avg Annual Imports (GWh),India Avg Annual Exports (GWh),' \
              'PHES-PowerCap (GW),PHES-EnergyCap (GWh),' \
              'CHTH,THTS,TSSA,SAZH,ZHPE,PEMO,IN1CH,IN2TS,IN3SA,IN4PE,' \
