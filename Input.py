@@ -4,13 +4,12 @@
 # Correspondence: bin.lu@anu.edu.au
 
 import numpy as np
-from Optimisation import scenario, node, percapita, export_flag, import_flag
+from Optimisation import scenario, node, percapita, import_flag
 
 ######### DEBUG ##########
 """ scenario = 'existing'
 node = 'Super'
 percapita = 6
-export_flag = True
 import_flag = True """
 #########################
 
@@ -133,7 +132,7 @@ allowance = min(0.00002*np.reshape(MLoad.sum(axis=1), (-1, 8760)).sum(axis=-1)) 
 
 ###### DECISION VARIABLE UPPER BOUNDS ######
 pv_ub = [20.] * pzones
-wind_ub = [0.05] * wzones
+wind_ub = [0.71, 0.05]
 phes_ub = [20.] * nodes
 phes_s_ub = [200.]
 inters_ub = [20.] * inters if import_flag else []
@@ -168,7 +167,6 @@ class Solution:
         self.expl = expl
         self.node = node
         self.scenario = scenario
-        self.export_flag = export_flag
         self.import_flag = import_flag
         self.allowance = allowance
         self.coverage = coverage

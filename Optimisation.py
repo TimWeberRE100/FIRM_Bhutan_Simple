@@ -17,14 +17,12 @@ parser.add_argument('-r', default=0.3, type=float, required=False, help='recombi
 parser.add_argument('-e', default=20, type=int, required=False, help='per-capita electricity = 3, 6, 10, 15, 20 MWh/year')
 parser.add_argument('-n', default='Super', type=str, required=False, help='Super, CH, TH...')
 parser.add_argument('-s', default='existing', type=str, required=False, help='all, construction, existing')
-parser.add_argument('-z', default='export', type=str, required=False, help='export, no_export')
 parser.add_argument('-y', default='import', type=str, required=False, help='import, no_import')
 args = parser.parse_args()
 
 scenario = args.s
 node = args.n
 percapita = args.e
-export_flag = (args.z == 'export')
 import_flag = (args.y == 'import')
 
 from Input import *
@@ -81,10 +79,6 @@ def F(x):
     # Average annual electricity imported through external interconnections
     GIndia = resolution * india_imports.sum() / years / efficiencyPH
 
-    # Assume all spillage, curtailment, and Hydro_CH2 generation is exported to india
-    #export_annual = (Spillage.sum() + indiaExportProfiles.sum()) * resolution / years * pow(10,-9)
-    #Ghydro_CH2 = indiaExportProfiles.sum() * resolution / years
-
     # Levelised cost of electricity calculation
     cost = factor * np.array([sum(S.CPV), sum(S.CWind), GIndia * pow(10,-6), sum(S.CPHP), S.CPHS, GPHES] + list(CDC) + [sum(S.CPV), sum(S.CWind), (GHydro) * pow(10, -6), 0, 0]) # $b p.a.
     cost = cost.sum()
@@ -95,9 +89,7 @@ def F(x):
     if not os.path.exists('Results'):
         os.makedirs('Results')
 
-    csv_file_path = 'Results/record_{}_{}_{}_{}.csv'.format(node, scenario, percapita, export_flag)
-
-    with open('Results/record_{}_{}_{}_{}.csv'.format(node, scenario, percapita, export_flag), 'a', newline="") as csvfile:
+    with open('Results/record_{}_{}_{}_{}.csv'.format(node, scenario, percapita, import_flag), 'a', newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(np.append(x,[PenDeficit+PenEnergy+PenPower+PenDC,PenDeficit,PenEnergy,PenPower,LCOE]))
 

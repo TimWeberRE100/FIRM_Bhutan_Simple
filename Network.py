@@ -47,48 +47,40 @@ def Transmission(solution, domestic_only=False, export_only=False, output=False)
     MExport = np.tile(solution.indiaExportProfiles, (nodes, 1)).transpose() * efactor
     MHydro_CH2 = np.tile(solution.indiaExportProfiles, (nodes, 1)).transpose() * ch2factor
 
-    if solution.export_flag:
-        CHydro_nodes = np.zeros(nodes)
-        for j in range(0,len(Nodel)):
-            CHydro_nodes[j] = solution.CHydro_max[expl==Nodel[j]].sum()
-        expfactor = np.tile(CHydro_nodes, (intervals, 1)) / sum(CHydro_nodes) if sum(CHydro_nodes) != 0 else 0
-        MSpillage_exp = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
-        MSpillage = np.zeros((nodes, intervals)).transpose()
+    CHydro_nodes = np.zeros(nodes)
+    for j in range(0,len(Nodel)):
+        CHydro_nodes[j] = solution.CHydro_max[expl==Nodel[j]].sum()
+    expfactor = np.tile(CHydro_nodes, (intervals, 1)) / sum(CHydro_nodes) if sum(CHydro_nodes) != 0 else 0
+    MSpillage_exp = np.tile(solution.Spillage, (nodes, 1)).transpose() * expfactor # MSpillage: ESP(j, t)
+    MSpillage = np.zeros((nodes, intervals)).transpose()
 
-        BaseloadDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
-        BaseloadDomestic[BaseloadDomestic < 0] = 0
-        BaseloadExports = MBaseload.sum(axis=1) - BaseloadDomestic
-        BaseloadExports[BaseloadExports < 0] = 0
-        b1factor = np.divide(MBaseload, MBaseload.sum(axis=1)[:, None], where=MBaseload.sum(axis=1)[:, None]!=0)
-        MBaseload_exp  = np.tile(BaseloadExports, (nodes, 1)).transpose() * b1factor
+    BaseloadDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
+    BaseloadDomestic[BaseloadDomestic < 0] = 0
+    BaseloadExports = MBaseload.sum(axis=1) - BaseloadDomestic
+    BaseloadExports[BaseloadExports < 0] = 0
+    b1factor = np.divide(MBaseload, MBaseload.sum(axis=1)[:, None], where=MBaseload.sum(axis=1)[:, None]!=0)
+    MBaseload_exp  = np.tile(BaseloadExports, (nodes, 1)).transpose() * b1factor
 
-        SolarDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
-        SolarDomestic[SolarDomestic < 0] = 0
-        SolarExports = MPV.sum(axis=1) - SolarDomestic        
-        SolarExports[SolarExports < 0] = 0
-        s1factor = np.divide(MPV, MPV.sum(axis=1)[:, None], where=MPV.sum(axis=1)[:, None]!=0)
-        MPV_exp  = np.tile(SolarExports, (nodes, 1)).transpose() * s1factor
+    SolarDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
+    SolarDomestic[SolarDomestic < 0] = 0
+    SolarExports = MPV.sum(axis=1) - SolarDomestic        
+    SolarExports[SolarExports < 0] = 0
+    s1factor = np.divide(MPV, MPV.sum(axis=1)[:, None], where=MPV.sum(axis=1)[:, None]!=0)
+    MPV_exp  = np.tile(SolarExports, (nodes, 1)).transpose() * s1factor
         
-        WindDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MPV.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
-        WindDomestic[WindDomestic < 0] = 0
-        WindExports = MWind.sum(axis=1) - WindDomestic      
-        WindExports[WindExports < 0] = 0  
-        w1factor = np.divide(MWind, MWind.sum(axis=1)[:, None], where=MWind.sum(axis=1)[:, None]!=0)
-        MWind_exp  = np.tile(WindExports, (nodes, 1)).transpose() * w1factor
+    WindDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MPV.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
+    WindDomestic[WindDomestic < 0] = 0
+    WindExports = MWind.sum(axis=1) - WindDomestic      
+    WindExports[WindExports < 0] = 0  
+    w1factor = np.divide(MWind, MWind.sum(axis=1)[:, None], where=MWind.sum(axis=1)[:, None]!=0)
+    MWind_exp  = np.tile(WindExports, (nodes, 1)).transpose() * w1factor
 
-        PondDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MPV.sum(axis=1) - MWind.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
-        PondDomestic[PondDomestic < 0] = 0
-        PondExports = MPond.sum(axis=1) - PondDomestic
-        PondExports[PondExports < 0]
-        p1factor = np.divide(MPond, MPond.sum(axis=1)[:, None], where=MPond.sum(axis=1)[:, None]!=0)
-        MPond_exp  = np.tile(PondExports, (nodes, 1)).transpose() * p1factor
-        
-    else:
-        M_minFactors = np.full((intervals, nodes), pow(10,-9)) # Matrix of 10^(-9) required to distribute spillage between nodes when no solar generation
-        MPW = MPV + M_minFactors + MWind + MPond
-        spfactor = np.divide(MPW, MPW.sum(axis=1)[:, None], where=MPW.sum(axis=1)[:, None]!=0)
-        MSpillage = np.tile(solution.Spillage, (nodes, 1)).transpose() * spfactor # MSpillage: ESP(j, t)
-        MSpillage_exp = np.zeros((nodes, intervals)).transpose()
+    PondDomestic = MChargePH.sum(axis=1) + MLoad.sum(axis=1) - MPV.sum(axis=1) - MWind.sum(axis=1) - MIndia.sum(axis=1) - MBaseload.sum(axis=1) - MDischargePH.sum(axis=1) - MDeficit.sum(axis=1)
+    PondDomestic[PondDomestic < 0] = 0
+    PondExports = MPond.sum(axis=1) - PondDomestic
+    PondExports[PondExports < 0]
+    p1factor = np.divide(MPond, MPond.sum(axis=1)[:, None], where=MPond.sum(axis=1)[:, None]!=0)
+    MPond_exp  = np.tile(PondExports, (nodes, 1)).transpose() * p1factor
 
     if domestic_only:
         MImport = MLoad + MChargePH + MSpillage + \
