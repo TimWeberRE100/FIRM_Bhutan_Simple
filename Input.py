@@ -6,13 +6,6 @@
 import numpy as np
 from Optimisation import scenario, node, percapita, import_flag
 
-######### DEBUG ##########
-""" scenario = 'existing'
-node = 'Super'
-percapita = 6
-import_flag = True """
-#########################
-
 ###### NODAL LISTS ######
 Nodel = np.array(['CH', 'TH', 'TS', 'SA', 'ZH', 'PE', 'MO', 'IN1', 'IN2', 'IN3', 'IN4'])
 PVl =   np.array(['CH']*1 + ['TH']*1 + ['TS']*1 + ['SA']*1 + ['ZH']*1 + ['PE']*1 + ['MO']*1)
@@ -93,26 +86,9 @@ firstyear, finalyear, timestep = (2013, 2022, 1)
 if 'Super' == node:
     coverage = Nodel
 
-""" else:
-    coverage = np.array([node])
-
-    MLoad = MLoad[:, np.where(np.in1d(Nodel, coverage)==True)[0]]
-    TSPV = TSPV[:, np.where(np.in1d(Nodel, coverage)==True)[0]]
-    #TSWind = TSWind[:, np.where(np.in1d(Nodel, coverage)==True)[0]]
-
-    CBaseload = CBaseload[np.where(np.in1d(Nodel, coverage)==True)[0]]
-    CHydro = CHydro[np.where(np.in1d(Nodel, coverage)==True)[0]]
-    CPeak = CHydro - CBaseload # GW
-
-    EHydro = EHydro[np.where(np.in1d(Nodel, coverage)==True)[0]]
-
-    Hydromax = EHydro.sum() * pow(10,3) # GWh to MWh per year
-
-    baseload = np.ones(MLoad.shape[0]) * CBaseload.sum() * 1000 # GW to MW
-
-    Nodel, PVl, Interl = [x[np.where(np.in1d(x, coverage)==True)[0]] for x in (Nodel, PVl, Interl)]
-#    Nodel, PVl, Windl, Interl = [x[np.where(np.in1d(x, coverage)==True)[0]] for x in (Nodel, PVl, Windl, Interl)]
- """
+else:
+    print("Undefined network structure. Check value of -n command line argument.")
+    exit()
 
 ###### DECISION VARIABLE LIST INDEXES ######
 intervals, nodes = MLoad.shape
