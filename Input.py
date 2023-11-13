@@ -52,7 +52,7 @@ CHydro_Pond[1] = 0 # Exclude Tala power station from pondage calculations
 baseload = np.ones((MLoad.shape[0], len(CHydro_RoR)))
 for i in range(0,MLoad.shape[0]):
     for j in range(0,len(CHydro_RoR)):
-        baseload[i,j] = min(hydroProfiles[i,j],CHydro_RoR[j]*pow(10,3)) if CHydro_Pond[j] != 0 else hydroProfiles[i,j]
+        baseload[i,j] = hydroProfiles[i,j]
 
 daily_pondage = np.zeros((MLoad.shape[0], len(CHydro_RoR)))
 for i in range(0,MLoad.shape[0]):
@@ -177,6 +177,9 @@ class Solution:
         self.CHydro_RoR = CHydro_RoR
         self.CHydro_Pond = CHydro_Pond
         self.CHydro_max = CHydro_max
+
+        self.DischargePond = np.zeros(intervals)
+        self.StoragePond = np.zeros(intervals)
         
 
     def __repr__(self):

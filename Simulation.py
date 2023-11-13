@@ -18,21 +18,21 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     ###### CREATE STORAGE SYSTEM VARIABLES ######
     Pcapacity_PH = sum(solution.CPHP) * pow(10, 3) # S-CPHP(j), GW to MW
     Scapacity_PH = solution.CPHS * pow(10, 3) # S-CPHS(j), GWh to MWh
-    Pcapacity_Pond = sum(solution.CHydro_Pond) * pow(10, 3)
-    Scapacity_Pond = 4*Pcapacity_Pond
+    """ Pcapacity_Pond = sum(solution.CHydro_Pond) * pow(10, 3)
+    Scapacity_Pond = 4*Pcapacity_Pond """
     efficiencyPH, resolution = (solution.efficiencyPH, solution.resolution)
 
     DischargePH, ChargePH, StoragePH, DischargePond, StoragePond = map(np.zeros, [length] * 5)
     Deficit_energy, Deficit_power = map(np.zeros, [length] * 2)
     
-    daily_pondage_divided = daily_pondage.sum(axis=1) / 24
+    #daily_pondage_divided = daily_pondage.sum(axis=1) / 24
 
     for t in range(length):
         ###### INITIALISE INTERVAL ######
         Netloadt = Netload[t]
         Storage_PH_t1 = StoragePH[t-1] if t>0 else 0.5 * Scapacity_PH
 
-        Storage_Pond_t1 = StoragePond[t-1] + daily_pondage_divided[t] if t>0 else 0.5*Scapacity_Pond
+        """ Storage_Pond_t1 = StoragePond[t-1] + daily_pondage_divided[t] if t>0 else 0.5*Scapacity_Pond
 
         # Calculate pond discharge
         if Scapacity_Pond < Storage_Pond_t1:
@@ -46,7 +46,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
         StoragePond[t] = Storage_Pond_t
 
         ##### UPDATE STORAGE SYSTEMS ######
-        Netloadt = Netloadt - Discharge_Pond_t
+        Netloadt = Netloadt - Discharge_Pond_t """
         Discharge_PH_t = min(max(0, Netloadt), Pcapacity_PH, Storage_PH_t1 / resolution)
         Charge_PH_t = min(-1 * min(0, Netloadt), Pcapacity_PH, (Scapacity_PH - Storage_PH_t1) / efficiencyPH / resolution)
         Storage_PH_t = Storage_PH_t1 - Discharge_PH_t * resolution + Charge_PH_t * resolution * efficiencyPH
@@ -78,7 +78,8 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     assert np.amin(Spillage) >= 0, 'Spillage below zero'
 
     ###### UPDATE SOLUTION OBJECT ######
-    solution.DischargePH, solution.ChargePH, solution.StoragePH, solution.DischargePond, solution.StoragePond = (DischargePH, ChargePH, StoragePH, DischargePond, StoragePond)
+    solution.DischargePH, solution.ChargePH, solution.StoragePH = (DischargePH, ChargePH, StoragePH)
+    #solution.DischargePond, solution.StoragePond = (DischargePond, StoragePond)
     solution.Deficit_energy, solution.Deficit_power, solution.Deficit, solution.Spillage = (Deficit_energy, Deficit_power, Deficit, Spillage)
 
     return Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage
