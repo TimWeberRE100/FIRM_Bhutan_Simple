@@ -114,10 +114,8 @@ phes_s_ub = [200.]
 inters_ub = [20.] * inters if import_flag else []
 
 ###### DECISION VARIABLE LOWER BOUNDS ######
-pv_ub = [.01] * pzones
-wind_ub = [0, 0]
-phes_ub = [0] * nodes
-phes_s_ub = [0.]
+pv_lb = [.1] * pzones
+
 
 class Solution:
     """A candidate solution of decision variables CPV(i), CWind(i), CPHP(j), S-CPHS(j)"""

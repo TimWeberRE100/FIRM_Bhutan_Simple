@@ -117,7 +117,7 @@ if __name__=='__main__':
     starttime = dt.datetime.now()
     print("Optimisation starts at", starttime)
 
-    lb = [0.] * pzones + [0.] * wzones + [0.] * nodes + [0.] + [0.] * inters
+    lb = pv_lb + [0.] * wzones + [0.] * nodes + [0.] + [0.] * inters
     ub = pv_ub + wind_ub + phes_ub + phes_s_ub + inters_ub
 
     result = differential_evolution(func=F, bounds=list(zip(lb, ub)), tol=0, # init=start,
