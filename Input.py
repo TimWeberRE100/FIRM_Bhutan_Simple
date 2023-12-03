@@ -27,6 +27,9 @@ if scenario == 'existing':
 elif scenario == 'construction':
     hydrol = np.array(['CH']*3+['MO']*3+['TH']*3+['TS']*1+['ZH']*3)
     expl = np.array(['IN1']*3+['IN4']*3+['IN1']*3+['IN2']*1+['IN3']*3)
+elif scenario == 'construction25':
+    hydrol = np.array(['CH']*3+['MO']*2+['TH']*2+['TS']*1+['ZH']*3)
+    expl = np.array(['IN1']*3+['IN4']*3+['IN1']*3+['IN2']*1+['IN3']*3)
 elif scenario == 'all':
     hydrol = np.array(['CH']*6+['MO']*5+['TH']*3+['TS']*2+['ZH']*4+['PE']*1)
     expl = np.array(['IN1']*6+['IN4']*5+['IN1']*3+['IN2']*2+['IN3']*4+['IN4']*1)
