@@ -57,7 +57,7 @@ def Analysis(optimisation_x,suffix):
 
     S = Solution(optimisation_x)
     
-    Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
+    Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage, pond_hours=pond_hours)
     Max_deficit1 = np.reshape(Deficit1, (-1, 8760)).sum(axis=-1) # MWh per year
     PIndia = Deficit1.max() * pow(10, -3) # GW
 
@@ -74,15 +74,15 @@ def Analysis(optimisation_x,suffix):
     print("IMPORTS")
     print("------------------------------")
     india_imports = np.zeros(intervals)
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage, pond_hours=pond_hours)
     imp = fill_deficit(Deficit,india_imports,sum(S.CInter)*1e3,Indiamax,True,0.8,168)
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=imp, daily_pondage=daily_pondage)
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=imp, daily_pondage=daily_pondage, pond_hours=pond_hours)
     print("India generation:", maxx(imp))
     print("Remaining deficit:", Deficit.sum()/1e6)
     step = 1
     while Deficit.sum() > allowance*years and step < 50:
         imp = fill_deficit(Deficit,imp,sum(S.CInter)*1e3,Indiamax,True,0.8,168)
-        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=imp, daily_pondage=daily_pondage)
+        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=imp, daily_pondage=daily_pondage, pond_hours=pond_hours)
         step += 1
     print("India generation max:", maxx(imp))
     print("India generation mean:", mean(imp))

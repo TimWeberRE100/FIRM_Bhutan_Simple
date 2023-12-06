@@ -29,7 +29,7 @@ elif scenario == 'construction':
     expl = np.array(['IN1']*3+['IN4']*3+['IN1']*3+['IN2']*1+['IN3']*3)
 elif scenario == 'construction25':
     hydrol = np.array(['CH']*3+['MO']*2+['TH']*2+['TS']*1+['ZH']*3)
-    expl = np.array(['IN1']*3+['IN4']*3+['IN1']*3+['IN2']*1+['IN3']*3)
+    expl = np.array(['IN1']*3+['IN4']*2+['IN1']*2+['IN2']*1+['IN3']*3)
 elif scenario == 'all':
     hydrol = np.array(['CH']*6+['MO']*5+['TH']*3+['TS']*2+['ZH']*4+['PE']*1)
     expl = np.array(['IN1']*6+['IN4']*5+['IN1']*3+['IN2']*2+['IN3']*4+['IN4']*1)
@@ -43,6 +43,7 @@ indiaExportProfiles = hydroProfiles[:,1] # Tala power station is full export to 
 for i in range(0,len(hydroProfiles[0])):
     hydroProfiles[i,1] = 0
 CHydro_Pond[1] = 0 # Exclude Tala power station from pondage calculations
+pond_hours = 4  # Number of hours of storage for each pond
 
 baseload = np.ones((MLoad.shape[0], len(CHydro_RoR)))
 for i in range(0,MLoad.shape[0]):

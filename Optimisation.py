@@ -39,7 +39,7 @@ def F(x):
 
     if import_flag == True:
         # Simulation with only baseload
-        Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage)
+        Deficit_energy1, Deficit_power1, Deficit1, DischargePH1, DischargePond1, Spillage1 = Reliability(S, baseload=baseload, india_imports=np.zeros(intervals), daily_pondage=daily_pondage, pond_hours=pond_hours)
         Max_deficit1 = np.reshape(Deficit1, (-1, 8760)).sum(axis=-1) # MWh per year
         PIndia = Deficit1.max() * pow(10, -3) # GW
 
@@ -49,7 +49,7 @@ def F(x):
         PenEnergy = 0
         
         # Simulation with baseload, all existing capacity, and all hydrogen
-        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=np.ones(intervals) * CIndia.sum() * pow(10,3), daily_pondage=daily_pondage)
+        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=np.ones(intervals) * CIndia.sum() * pow(10,3), daily_pondage=daily_pondage, pond_hours=pond_hours)
 
         # Deficit penalty function
         PenDeficit = max(0, Deficit.sum() * resolution - S.allowance)
@@ -58,7 +58,7 @@ def F(x):
         india_imports = np.clip(Deficit1, 0, CIndia.sum() * pow(10,3)) # MW
 
         # Simulation using the existing capacity generation profiles - required for storage average annual discharge
-        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
+        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage, pond_hours=pond_hours)
 
         # Discharged energy from storage systems
         GPHES = DischargePH.sum() * resolution / years * pow(10,-6) # TWh per year
@@ -69,7 +69,7 @@ def F(x):
         india_imports = np.zeros(intervals)
 
         # Simulation using the existing capacity generation profiles - required for storage average annual discharge
-        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage)
+        Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=india_imports, daily_pondage=daily_pondage, pond_hours=pond_hours)
 
         # Deficit penalty function
         PenDeficit = max(0, Deficit.sum() * resolution - S.allowance)

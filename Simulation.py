@@ -5,7 +5,7 @@
 
 import numpy as np
 
-def Reliability(solution, baseload, india_imports, daily_pondage, start=None, end=None):
+def Reliability(solution, baseload, india_imports, daily_pondage, pond_hours, start=None, end=None):
     """Deficit = Simulation.Reliability(S, hydro=...)"""
 
     ###### CALCULATE NETLOAD FOR EACH INTERVAL ######
@@ -19,7 +19,7 @@ def Reliability(solution, baseload, india_imports, daily_pondage, start=None, en
     Pcapacity_PH = sum(solution.CPHP) * pow(10, 3) # S-CPHP(j), GW to MW
     Scapacity_PH = solution.CPHS * pow(10, 3) # S-CPHS(j), GWh to MWh
     Pcapacity_Pond = sum(solution.CHydro_Pond) * pow(10, 3)
-    Scapacity_Pond = 4*Pcapacity_Pond
+    Scapacity_Pond = pond_hours*Pcapacity_Pond
     efficiencyPH, resolution = (solution.efficiencyPH, solution.resolution)
 
     DischargePH, ChargePH, StoragePH, DischargePond, StoragePond = map(np.zeros, [length] * 5)

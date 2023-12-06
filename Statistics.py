@@ -280,7 +280,7 @@ def Information(x, flexible):
     print("Statistics start at", start)
 
     S = Solution(x)
-    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage)
+    Deficit_energy, Deficit_power, Deficit, DischargePH, DischargePond, Spillage = Reliability(S, baseload=baseload, india_imports=flexible, daily_pondage=daily_pondage, pond_hours=pond_hours)
 
     try:
         assert Deficit.sum() * resolution < 0.1, 'Energy generation and demand are not balanced.'
