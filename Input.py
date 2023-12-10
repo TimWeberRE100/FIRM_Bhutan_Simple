@@ -118,7 +118,7 @@ phes_s_ub = [200.]
 inters_ub = [20.] * inters if import_flag else []
 
 ###### DECISION VARIABLE LOWER BOUNDS ######
-pv_lb = [.1] * pzones
+pv_lb = [.001] * pzones
 
 
 class Solution:
